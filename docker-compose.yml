@@ -6,6 +6,8 @@ services:
       dockerfile: Dockerfile.react  # The Dockerfile for React app
     container_name: tracker-react
     restart: always
+    env_file:
+      - .env
     ports:
       - "5173:5173"  # React app port
     volumes:
@@ -32,6 +34,8 @@ services:
       context: .  # Reference to current directory for building the custom Blender image
       dockerfile: Dockerfile.blender  # Dockerfile used to build the Blender image
     container_name: tracker_blender
+    env_file:
+      - .env
     security_opt:
       - seccomp:unconfined  # Allows Blender to run without security restrictions
     environment:
@@ -47,7 +51,7 @@ services:
       - ./config:/config  # Ensure local config directory is mapped properly
       - ./workspace:/workspace  # Mount the workspace for Blender files
     ports:
-      - "3002:3000"  # Blender web interface port
+#      - "3002:3000"  # Blender web interface port
       - "3003:3001"  # Another port for Blender (if needed)
     restart: unless-stopped
     networks:
@@ -69,6 +73,8 @@ services:
     image: mysql:8.0
     container_name: tracker_mysql
     restart: unless-stopped
+    env_file:
+      - .env
     volumes:
       - ./data:/var/lib/mysql
       - ./my.cnf:/etc/mysql/my.cnf
