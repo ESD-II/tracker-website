@@ -1,0 +1,37 @@
+footer {
+  background-color: #0275d8;
+  color: aliceblue;
+  font-size: 1.5rem;
+  padding: 10px 0; /* Add padding for better spacing */
+  text-align: center; /* Ensure text is centered */
+  margin-top: auto; /* Push footer to the bottom if content is short */
+  z-index: 1;
+}
+
+.footer-content {
+  display: flex;
+  justify-content: center; /* Center items horizontally */
+  align-items: center; /* Center items vertically */
+  gap: 15px; /* Add gap between items */
+}
+
+.footer-content p {
+  margin: 0; /* Remove default margin */
+}
+
+.footer-content a {
+  color: white; /* Change link color to match footer */
+  text-decoration: none; /* Remove underline */
+  transition: color 0.3s ease; /* Smooth transition for hover effect */
+}
+
+.footer-content a:hover {
+  color: #ffdd57; /* Change link color on hover */
+}
+
+.footer-icons {
+  display: flex;
+  justify-content: center; /* Center icons horizontally */
+  align-items: center; /* Center icons vertically */
+  gap: 10px; /* Adjust the gap between icons */
+}
