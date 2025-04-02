@@ -1,0 +1,40 @@
+# Use the exported image as the base
+FROM blender-docker-basic:latest
+
+# Set the working directory inside the container
+WORKDIR /workspace
+
+# Copy the current directory contents to the container's /workspace directory
+COPY . /workspace/
+
+# Copy Blender Python server and the Blender file
+#COPY blenderServer.py /workspace/blenderServer.py
+#COPY tennisCourt.blend /workspace/tennisCourt.blend
+
+# Install Python, pip, and dependencies for virtualenv
+RUN apt-get update && \
+    apt-get install -y python3 python3-pip python3-venv && \
+    rm -rf /var/lib/apt/lists/*
+
+# Create and activate a virtual environment
+RUN python3 -m venv /workspace/venv
+
+# Install Python dependencies inside the virtual environment
+RUN /workspace/venv/bin/pip install numpy websockets
+
+# Set environment variables (optional, only if needed)
+ENV DISPLAY=:1 \
+    HOME=/config \
+    LANG=en_US.UTF-8 \
+    LANGUAGE=en_US.UTF-8 \
+    TERM=xterm \
+    TZ=Etc/UTC
+
+# Expose required ports
+EXPOSE 3000 3001
+
+# Define volumes
+VOLUME ["/config"]
+
+# Set entrypoint (as in your image)
+ENTRYPOINT ["/init"]
