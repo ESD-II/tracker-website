@@ -1,0 +1,9 @@
+.page-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Centers content horizontally */
+  justify-content: flex-start; /* Aligns content to the top */
+  height: 100vh; /* Full viewport height */
+  padding-top: 20px; /* Adjust this for spacing */
+  text-align: center;
+}
