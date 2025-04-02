@@ -7,7 +7,7 @@ services:
     container_name: blender-react
     restart: always
     ports:
-      - "5000:5173"  # React app port
+      - "5000:3000"  # React app port
     volumes:
       - ./frontend:/workspace/frontend  # React app directory
     networks:

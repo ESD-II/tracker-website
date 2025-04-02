@@ -13,8 +13,8 @@ RUN npm install
 # Copy the rest of the React app's source code
 COPY ./frontend /app/
 
-# Expose the React app port 5173
-EXPOSE 5173
+# Expose the React app port (default React development port is 3000)
+EXPOSE 3000
 
 # Run the React app
 CMD ["npm", "start"]
