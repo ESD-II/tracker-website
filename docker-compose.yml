@@ -1,10 +1,10 @@
 services:
   # React App Container
-  blender-react:
+  tracker-react:
     build:
       context: .
       dockerfile: Dockerfile.react  # The Dockerfile for React app
-    container_name: blender-react
+    container_name: tracker-react
     restart: always
     ports:
       - "5173:5173"  # React app port
@@ -27,11 +27,11 @@ services:
 #              capabilities: [compute, video, graphics, utility, gpu]
 
   # Blender Container
-  blender:
+  tracker_blender:
     build:
       context: .  # Reference to current directory for building the custom Blender image
       dockerfile: Dockerfile.blender  # Dockerfile used to build the Blender image
-    container_name: blender
+    container_name: tracker_blender
     security_opt:
       - seccomp:unconfined  # Allows Blender to run without security restrictions
     environment:
@@ -65,9 +65,9 @@ services:
               count: all
               capabilities: [compute, video, graphics, utility, display]
 
-  mysql:
+  tracker_mysql:
     image: mysql:8.0
-    container_name: mysql
+    container_name: tracker_mysql
     restart: unless-stopped
     volumes:
       - ./data:/var/lib/mysql
