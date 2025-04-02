@@ -1,0 +1,67 @@
+services:
+  # React App Container
+  blender-react:
+    build:
+      context: .
+      dockerfile: Dockerfile.react  # The Dockerfile for React app
+    container_name: blender-react
+    restart: always
+    ports:
+      - "5000:5173"  # React app port
+    volumes:
+      - ./frontend:/workspace/frontend  # React app directory
+    networks:
+      - traefik_network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.blender-react.rule=Host(`blenderUI.benjaminf.net`)"
+      - "traefik.http.services.blender-react.loadbalancer.server.port=3000"  # React frontend
+#    deploy:
+#      resources:
+#        reservations:
+#          devices:
+#            - driver: nvidia
+#              count: all
+#              capabilities: [compute, video, graphics, utility, gpu]
+
+  # Blender Container
+  blender:
+    build:
+      context: .  # Reference to current directory for building the custom Blender image
+      dockerfile: Dockerfile.blender  # Dockerfile used to build the Blender image
+    container_name: blender
+    security_opt:
+      - seccomp:unconfined  # Allows Blender to run without security restrictions
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+      - DISPLAY=:1  # Ensure correct display environment for Blender
+      - HOME=/config
+      - LANG=en_US.UTF-8
+      - LANGUAGE=en_US.UTF-8
+      - TERM=xterm
+    volumes:
+      - ./config:/config  # Ensure local config directory is mapped properly
+      - ./workspace:/workspace  # Mount the workspace for Blender files
+    ports:
+      - "3002:3000"  # Blender web interface port
+      - "3003:3001"  # Another port for Blender (if needed)
+    restart: unless-stopped
+    networks:
+      - traefik_network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.blender.rule=Host(`blender.benjaminf.net`)"
+      - "traefik.http.services.blender.loadbalancer.server.port=3000"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [compute, video, graphics, utility, display]
+
+networks:
+  traefik_network:
+    external: true
