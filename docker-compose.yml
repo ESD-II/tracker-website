@@ -7,15 +7,17 @@ services:
     container_name: blender-react
     restart: always
     ports:
-      - "5000:3000"  # React app port
+      - "5173:5173"  # React app port
     volumes:
       - ./frontend:/workspace/frontend  # React app directory
+      - ./frontend/node_modules:/workspace/frontend/node_modules  # Node modules directory
     networks:
       - traefik_network
+      - internal
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.blender-react.rule=Host(`blenderUI.benjaminf.net`)"
-      - "traefik.http.services.blender-react.loadbalancer.server.port=3000"  # React frontend
+      - "traefik.http.services.blender-react.loadbalancer.server.port=80"  # React frontend
 #    deploy:
 #      resources:
 #        reservations:
@@ -50,6 +52,7 @@ services:
     restart: unless-stopped
     networks:
       - traefik_network
+      - internal
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.blender.rule=Host(`blender.benjaminf.net`)"
@@ -62,6 +65,18 @@ services:
               count: all
               capabilities: [compute, video, graphics, utility, display]
 
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    restart: unless-stopped
+    volumes:
+      - ./data:/var/lib/mysql
+      - ./my.cnf:/etc/mysql/my.cnf
+    networks:
+      - internal  # Only accessible within this private network
+
 networks:
   traefik_network:
     external: true
+  internal:
+    internal: true  # Private network, only accessible by defined services
