@@ -182,7 +182,3 @@ data/*
 
 config/*
 !config/.gitkeep
-!data/.gitkeep
-
-config/*
-!config/.gitkeep
