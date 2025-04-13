@@ -1,0 +1,4 @@
+FROM eclipse-mosquitto:2.0
+
+# Optional: copy custom config if needed
+# COPY ./mqtt/config/mosquitto.conf /mosquitto/config/mosquitto.conf
