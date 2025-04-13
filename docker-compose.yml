@@ -1,67 +1,89 @@
 services:
-  # React App Container
-  blender-react:
+  # React App Container (unchanged)
+  tracker-react:
     build:
       context: .
-      dockerfile: Dockerfile.react  # The Dockerfile for React app
-    container_name: blender-react
+      dockerfile: Dockerfile.react
+    container_name: tracker-react
     restart: always
+    env_file:
+      - .env
     ports:
-      - "5000:5173"  # React app port
+      - "5173:5173"
     volumes:
-      - ./frontend:/workspace/frontend  # React app directory
+      - ./frontend:/workspace/frontend
+      - ./frontend/node_modules:/workspace/frontend/node_modules
     networks:
       - traefik_network
+      - internal
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.blender-react.rule=Host(`blenderUI.benjaminf.net`)"
-      - "traefik.http.services.blender-react.loadbalancer.server.port=3000"  # React frontend
+      - "traefik.http.services.blender-react.loadbalancer.server.port=80"
+
+  # Blender Container
+  tracker_blender:
+    build:
+      context: .
+      dockerfile: Dockerfile.blender
+    container_name: tracker_blender
+    env_file:
+      - .env
+    volumes:
+      - ./config:/config
+      - ./workspace:/workspace
+    ports:
+      - "55001:55001" 
+    restart: unless-stopped
+    networks:
+      - traefik_network
+      - internal
+    command: /workspace/startBlender.sh
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.blender.rule=Host(`blender.benjaminf.net`)"
+      - "traefik.http.services.blender.loadbalancer.server.port=55001"
 #    deploy:
 #      resources:
 #        reservations:
 #          devices:
 #            - driver: nvidia
 #              count: all
-#              capabilities: [compute, video, graphics, utility, gpu]
+#              capabilities: [compute, video, graphics, utility, display]
 
-  # Blender Container
-  blender:
-    build:
-      context: .  # Reference to current directory for building the custom Blender image
-      dockerfile: Dockerfile.blender  # Dockerfile used to build the Blender image
-    container_name: blender
-    security_opt:
-      - seccomp:unconfined  # Allows Blender to run without security restrictions
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Etc/UTC
-      - DISPLAY=:1  # Ensure correct display environment for Blender
-      - HOME=/config
-      - LANG=en_US.UTF-8
-      - LANGUAGE=en_US.UTF-8
-      - TERM=xterm
-    volumes:
-      - ./config:/config  # Ensure local config directory is mapped properly
-      - ./workspace:/workspace  # Mount the workspace for Blender files
-    ports:
-      - "3002:3000"  # Blender web interface port
-      - "3003:3001"  # Another port for Blender (if needed)
+  tracker_mysql:
+    image: mysql:8.0
+    container_name: tracker_mysql
     restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./data:/var/lib/mysql
+      - ./my.cnf:/etc/mysql/my.cnf
     networks:
-      - traefik_network
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.blender.rule=Host(`blender.benjaminf.net`)"
-      - "traefik.http.services.blender.loadbalancer.server.port=3000"
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [compute, video, graphics, utility, display]
+      - internal
+      
+  tracker_mqtt:
+    build:
+      context: .
+      dockerfile: Dockerfile.mqtt
+    container_name: tracker_mqtt
+    restart: unless-stopped
+    ports:
+      - "1884:1883" # no traefik routing here, only exposed port
+    volumes:
+      - ./mqtt/config:/mosquitto/config
+      - ./mqtt/data:/mosquitto/data
+      - ./mqtt/log:/mosquitto/log
+    networks:
+      - internal
+      - bridge
+
 
 networks:
   traefik_network:
     external: true
+  internal:
+    internal: true
+  bridge:
+    internal: false

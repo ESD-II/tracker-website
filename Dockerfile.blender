@@ -1,40 +1,58 @@
-# Use the exported image as the base
-FROM blender-docker-basic:latest
+# Use Ubuntu as the base image
+FROM ubuntu:22.04
 
-# Set the working directory inside the container
+# Install dependencies: Xvfb, tar, python3, and others
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    xvfb \
+    tar \
+    xz-utils \
+    python3 \
+    python3-pip \
+    python3-venv \
+    ca-certificates \
+    libxrender1 \
+    libxext6 \
+    libx11-6 \
+    libxi6 \
+    libxkbcommon0 \
+    libgl1 \
+    libxfixes3 \
+    libxcursor1 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxrandr2 \
+    libxinerama1 \
+    libsm6 \
+    libice6 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy the locally downloaded Blender archive into the container
+COPY blender-4.3.2-linux-x64.tar.xz /tmp/
+
+# Extract Blender, clean up, and symlink binary
+RUN tar -xf /tmp/blender-4.3.2-linux-x64.tar.xz -C /opt && \
+    rm /tmp/blender-4.3.2-linux-x64.tar.xz && \
+    mv /opt/blender-4.3.2-linux-x64 /opt/blender && \
+    ln -s /opt/blender/blender /usr/local/bin/blender
+
+# Create and activate a virtual environment for additional Python dependencies
 WORKDIR /workspace
+RUN python3 -m venv /workspace/venv && \
+    /workspace/venv/bin/pip install --upgrade pip && \
+    /workspace/venv/bin/pip install numpy websockets
 
-# Copy the current directory contents to the container's /workspace directory
-COPY . /workspace/
+# Copy your Blender files into the container
+#COPY tennisCourt.blend /workspace/
+#COPY blenderServer.py /workspace/
 
-# Copy Blender Python server and the Blender file
-#COPY blenderServer.py /workspace/blenderServer.py
-#COPY tennisCourt.blend /workspace/tennisCourt.blend
+# Expose any necessary ports (adjust if needed)
+EXPOSE 55001
 
-# Install Python, pip, and dependencies for virtualenv
-RUN apt-get update && \
-    apt-get install -y python3 python3-pip python3-venv && \
-    rm -rf /var/lib/apt/lists/*
-
-# Create and activate a virtual environment
-RUN python3 -m venv /workspace/venv
-
-# Install Python dependencies inside the virtual environment
-RUN /workspace/venv/bin/pip install numpy websockets
-
-# Set environment variables (optional, only if needed)
-ENV DISPLAY=:1 \
-    HOME=/config \
-    LANG=en_US.UTF-8 \
-    LANGUAGE=en_US.UTF-8 \
-    TERM=xterm \
-    TZ=Etc/UTC
-
-# Expose required ports
-EXPOSE 3000 3001
-
-# Define volumes
+# Optionally define a volume for config if needed
 VOLUME ["/config"]
 
-# Set entrypoint (as in your image)
-ENTRYPOINT ["/init"]
+# debugging files being copied
+RUN ls -l /workspace
+
+# Entrypoint to run Blender in headless mode with your Python script
+#ENTRYPOINT ["xvfb-run", "-a", "blender", "/workspace/tennisCourt.blend", "--python", "/workspace/blenderServer.py"]
