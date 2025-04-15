@@ -3,11 +3,11 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./App.css";
 
-import NavigationBar from "./components/NavigationBar.jsx";
-import Footer from "./components/Footer.jsx";
-import Home from "./pages/Home.jsx";
-import About from "./pages/About.jsx";
-import NotFound from "./pages/NotFound.jsx";
+import NavigationBar from "./components/navigation/NavigationBar.jsx";
+import Footer from "./components/footer/Footer.jsx";
+import Home from "./components/home/Home.jsx";
+import About from "./components/about/About.jsx";
+import NotFound from "./components/notfound/NotFound.jsx";
 
 function App() {
   const [count, setCount] = useState(0);
@@ -29,7 +29,7 @@ function App() {
           </Routes>
         </BrowserRouter>
       </div>
-      {/* <Footer /> */}
+      <Footer />
     </div>
   );
 }
