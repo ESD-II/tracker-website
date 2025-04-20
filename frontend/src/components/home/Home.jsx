@@ -1,4 +1,3 @@
-import { useState } from "react";
 import "./Home.css";
 
 import MQTTComponent from "./MQTTComponent";
