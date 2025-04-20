@@ -1,121 +1,128 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
-import mqtt from "mqtt"; // Import mqtt directly
+import React, { useEffect, useState, useRef } from "react";
+import mqtt from "mqtt";
 
 const MQTTComponent = () => {
-  const [client, setClient] = useState(null);
-  const [connectStatus, setConnectStatus] = useState("Connect");
-  const [msg, setMsg] = useState("");
-  const [messages, setMessages] = useState([]);
-  const [error, setError] = useState(""); // For handling errors
-  const mqttBrokerUrl = "ws://192.168.1.4:8885"; // Update this with actual URL
-  const mqttTopic = "cameras/ws"; // Update this with your actual topic
+  const mqttClientRef = useRef(null);
+  const [xCoord, setXCoord] = useState("");
+  const [yCoord, setYCoord] = useState("");
+  const [zCoord, setZCoord] = useState("");
+  const [centroidVal, setCentroidVal] = useState("");
 
-  const clientRef = useRef(null); // To persist the client across renders
-
-  const mqttConnect = useCallback(() => {
-    setConnectStatus("Connecting...");
-    setError(""); // Reset error message on every connection attempt
-
-    const newClient = mqtt.connect(mqttBrokerUrl, {
-      reconnectPeriod: 1000, // Attempt reconnect every 1 second if disconnected
-    });
-
-    clientRef.current = newClient;
-
-    newClient.on("connect", () => {
-      setConnectStatus("Connected");
-      console.log("MQTT Connected");
-
-      // Subscribe after successful connection
-      if (newClient.connected) {
-        newClient.subscribe(mqttTopic, (err) => {
-          if (err) {
-            console.error("Subscription error:", err);
-            setError("Failed to subscribe.");
-          } else {
-            console.log("Subscribed to topic:", mqttTopic);
-          }
-        });
-      } else {
-        console.warn("Client not connected yet, retrying subscription.");
-      }
-    });
-
-    newClient.on("error", (err) => {
-      console.error("MQTT Connection Error:", err);
-      setError("Could not connect.");
-      newClient.end(); // Disconnecting client to trigger a reconnection attempt
-    });
-
-    newClient.on("message", (topic, message) => {
-      setMessages((prevMessages) => [...prevMessages, message.toString()]);
-    });
-
-    // Handle disconnection and attempt to reconnect automatically
-    newClient.on("close", () => {
-      console.log("MQTT client disconnected.");
-      setConnectStatus("Disconnected. Reconnecting...");
-    });
-
-    newClient.on("reconnect", () => {
-      console.log("Reconnecting to MQTT...");
-      setConnectStatus("Reconnecting...");
-    });
-
-    newClient.on("offline", () => {
-      console.log("MQTT client is offline.");
-      setConnectStatus("Offline");
-    });
-
-    setClient(newClient); // Update the state with the new client
-  }, [mqttBrokerUrl, mqttTopic]);
+  /* User Inputs */
+  const [xInput, setXInput] = useState("");
+  const [yInput, setYInput] = useState("");
+  const [zInput, setZInput] = useState("");
 
   useEffect(() => {
-    mqttConnect();
-    return () => {
-      console.log("Cleaning up MQTT");
-      if (clientRef.current) {
-        clientRef.current.end(); // Clean up the client on unmount
+    const mqttClient = mqtt.connect("ws://192.168.1.4:8885");
+    mqttClientRef.current = mqttClient;
+
+    mqttClient.on("connect", () => {
+      console.log("Connected to MQTT broker");
+
+      mqttClient.subscribe(
+        [
+          "Ball/xCoordinate",
+          "Ball/yCoordinate",
+          "Ball/zCoordinate",
+          "Ball/centroid",
+        ],
+        (err) => {
+          if (err) {
+            console.log("Subscription failed: ", err);
+          }
+        }
+      );
+    });
+
+    mqttClient.on("error", (err) => {
+      console.error("MQTT Connection Error:", err);
+    });
+
+    mqttClient.on("message", (topic, payload) => {
+      const message = payload.toString();
+      console.log(`Message received on ${topic}: ${message}`);
+
+      if (topic === "Ball/xCoordinate") {
+        setXCoord(message);
+      } else if (topic === "Ball/yCoordinate") {
+        setYCoord(message);
+      } else if (topic === "Ball/zCoordinate") {
+        setZCoord(message);
+      } else if (topic === "Ball/centroid") {
+        setCentroidVal(message);
       }
+    });
+
+    return () => {
+      mqttClient.end();
     };
-  }, [mqttConnect]);
+  }, []);
 
-  const handleInputChange = (event) => {
-    setMsg(event.target.value);
-  };
-
-  const publishMessage = () => {
-    if (client && connectStatus === "Connected") {
-      client.publish(mqttTopic, msg);
-      setMsg(""); // Clear the input field after publishing
-    } else {
-      setError("Not connected to the MQTT broker.");
+  const handlePublish = () => {
+    const client = mqttClientRef.current;
+    if (client) {
+      client.publish("Ball/xCoordinate", xInput);
+      client.publish("Ball/yCoordinate", yInput);
+      client.publish("Ball/zCoordinate", zInput);
+      client.publish("Ball/centroid", "111");
     }
   };
 
   return (
     <div>
-      <div>Connection Status: {connectStatus}</div>
-      {error && <div style={{ color: "red" }}>Error: {error}</div>}
       <div>
-        <input
-          type="text"
-          value={msg}
-          onChange={handleInputChange}
-          placeholder="Enter message"
-        />
-        <button
-          onClick={publishMessage}
-          disabled={connectStatus !== "Connected"}
-        >
-          Publish
+        <div class="input-group input-group-sm mb-3">
+          <span class="input-group-text" id="inputGroup-sizing-sm">
+            Enter X Coordinate:{" "}
+          </span>
+          <input
+            type="text"
+            class="form-control"
+            aria-label="Sizing example input"
+            aria-describedby="inputGroup-sizing-sm"
+            value={xInput}
+            onChange={(e) => setXInput(e.target.value)}
+          />
+        </div>
+
+        <div class="input-group input-group-sm mb-3">
+          <span class="input-group-text" id="inputGroup-sizing-sm">
+            Enter Y Coordinate:{" "}
+          </span>
+          <input
+            type="text"
+            class="form-control"
+            aria-label="Sizing example input"
+            aria-describedby="inputGroup-sizing-sm"
+            value={yInput}
+            onChange={(e) => setYInput(e.target.value)}
+          />
+        </div>
+
+        <div class="input-group input-group-sm mb-3">
+          <span class="input-group-text" id="inputGroup-sizing-sm">
+            Enter Z Coordinate:{" "}
+          </span>
+          <input
+            type="text"
+            class="form-control"
+            aria-label="Sizing example input"
+            aria-describedby="inputGroup-sizing-sm"
+            value={zInput}
+            onChange={(e) => setZInput(e.target.value)}
+          />
+        </div>
+
+        <button type="button" class="btn btn-primary" onClick={handlePublish}>
+          Send Values
         </button>
       </div>
-      <div>
-        {messages.map((message, index) => (
-          <p key={index}>{message}</p>
-        ))}
-      </div>
+
+      <p>X Coordinate: {xCoord}</p>
+      <p>Y Coordinate: {yCoord}</p>
+      <p>Z Coordinate: {zCoord}</p>
+      <p>Ball Centroid: {centroidVal}</p>
     </div>
   );
 };
