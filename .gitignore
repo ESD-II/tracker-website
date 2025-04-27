@@ -178,6 +178,7 @@ blender-4.3.2-linux-x64.tar.xz
 
 # removing the data directory
 data/*
+data/#innodb_temp
 !data/.gitkeep
 
 config/*
