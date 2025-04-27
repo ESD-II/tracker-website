@@ -55,6 +55,8 @@ services:
     image: mysql:8.0
     container_name: tracker_mysql
     restart: unless-stopped
+    ports:
+      - "3309:3306" # no traefik routing here, only exposed port
     env_file:
       - .env
     volumes:
