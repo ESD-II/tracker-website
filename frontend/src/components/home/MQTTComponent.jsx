@@ -4,10 +4,17 @@ import mqtt from "mqtt";
 const MQTTComponent = () => {
   const mqttClientRef = useRef(null);
 
+  // Default input values
+  const defaultServer = "0,0,0";
+  const defaultTeam1Pts = "0";
+  const defaultTeam1Sets = "0";
+  const defaultTeam2Pts = "0";
+  const defaultTeam2Sets = "0";
+  const defaultTeam1Games = "0";
+  const defaultTeam2Games = "0";
+
   // MQTT state
-  const [liveX, setLiveX] = useState("");
-  const [liveY, setLiveY] = useState("");
-  const [liveZ, setLiveZ] = useState("");
+  const [liveServer, setLiveServer] = useState("");
   const [liveCentroid, setLiveCentroid] = useState("");
   const [liveTeam1Pts, setLiveTeam1Pts] = useState("");
   const [liveTeam1Sets, setLiveTeam1Sets] = useState("");
@@ -16,57 +23,52 @@ const MQTTComponent = () => {
   const [liveTeam1Games, setLiveTeam1Games] = useState("");
   const [liveTeam2Games, setLiveTeam2Games] = useState("");
 
-  // Default input values
-  const defaultX = "0";
-  const defaultY = "0";
-  const defaultZ = "0";
-  const defaultTeam1Pts = "0";
-  const defaultTeam1Sets = "0";
-  const defaultTeam2Pts = "0";
-  const defaultTeam2Sets = "0";
-  const defaultTeam1Games = "0";
-  const defaultTeam2Games = "0";
-
-  const [xInput, setXInput] = useState(defaultX);
-  const [yInput, setYInput] = useState(defaultY);
-  const [zInput, setZInput] = useState(defaultZ);
-  const [team1PtsInput, setteam1PtsInput] = useState(defaultTeam1Pts);
-  const [team1SetsInput, setteam1SetsInput] = useState(defaultTeam1Sets);
-  const [team2PtsInput, setteam2PtsInput] = useState(defaultTeam2Pts);
-  const [team2SetsInput, setteam2SetsInput] = useState(defaultTeam2Sets);
+  const [serverInput, setServerInput] = useState(defaultServer);
+  const [team1PtsInput, setTeam1PtsInput] = useState(defaultTeam1Pts);
+  const [team1SetsInput, setTeam1SetsInput] = useState(defaultTeam1Sets);
+  const [team2PtsInput, setTeam2PtsInput] = useState(defaultTeam2Pts);
+  const [team2SetsInput, setTeam2SetsInput] = useState(defaultTeam2Sets);
   const [team1GamesInput, setTeam1GamesInput] = useState(defaultTeam1Games);
   const [team2GamesInput, setTeam2GamesInput] = useState(defaultTeam2Games);
 
   useEffect(() => {
-    const mqttClient = mqtt.connect("ws://192.168.1.4:8885");
+    const mqttClient = mqtt.connect("benjaminf.net:1884");
     mqttClientRef.current = mqttClient;
 
     mqttClient.on("connect", () => {
-      mqttClient.subscribe([
-        "Ball/xCoordinate",
-        "Ball/yCoordinate",
-        "Ball/zCoordinate",
-        "Ball/centroid",
-        "Team1/points",
-        "Team1/sets",
-        "Team1/games",
-        "Team2/points",
-        "Team2/sets",
-        "Team2/games",
-      ]);
+      console.log("Connected to MQTT broker");
+      mqttClient.subscribe(
+        [
+          "tennis/scoreboard/ball_coords",
+          "Ball/centroid",
+          "Team1/points",
+          "Team1/sets",
+          "Team1/games",
+          "Team2/points",
+          "Team2/sets",
+          "Team2/games",
+        ],
+        (err, granted) => {
+          if (err) {
+            console.error(
+              "Subscription error:",
+              err
+            ); /* Print error to the console */
+          } else {
+            console.log(
+              "Subscribed to topics:",
+              granted.map((g) => g.topic)
+            );
+          }
+        }
+      );
     });
 
     mqttClient.on("message", (topic, payload) => {
       const message = payload.toString();
       switch (topic) {
-        case "Ball/xCoordinate":
-          setLiveX(message);
-          break;
-        case "Ball/yCoordinate":
-          setLiveY(message);
-          break;
-        case "Ball/zCoordinate":
-          setLiveZ(message);
+        case "tennis/scoreboard/ball_coords":
+          setLiveServer(message);
           break;
         case "Ball/centroid":
           setLiveCentroid(message);
@@ -94,15 +96,16 @@ const MQTTComponent = () => {
       }
     });
 
-    return () => mqttClient.end();
+    return () => {
+      if (mqttClientRef.current) {
+        mqttClientRef.current.end();
+      }
+    };
   }, []);
 
   const handlePublish = () => {
     const client = mqttClientRef.current;
-    if (client) {
-      client.publish("Ball/xCoordinate", xInput);
-      client.publish("Ball/yCoordinate", yInput);
-      client.publish("Ball/zCoordinate", zInput);
+    if (client && client.connected) {
       client.publish("Ball/centroid", "0");
       client.publish("Team1/points", team1PtsInput);
       client.publish("Team1/sets", team1SetsInput);
@@ -110,18 +113,17 @@ const MQTTComponent = () => {
       client.publish("Team2/points", team2PtsInput);
       client.publish("Team2/sets", team2SetsInput);
       client.publish("Team2/games", team2GamesInput);
+    } else {
+      console.log("MQTT client not connected.");
     }
   };
 
   const handleClearInputs = () => {
-    setXInput(defaultX);
-    setYInput(defaultY);
-    setZInput(defaultZ);
-    setteam1PtsInput(defaultTeam1Pts);
-    setteam1SetsInput(defaultTeam1Sets);
+    setTeam1PtsInput(defaultTeam1Pts);
+    setTeam1SetsInput(defaultTeam1Sets);
     setTeam1GamesInput(defaultTeam1Games);
-    setteam2PtsInput(defaultTeam2Pts);
-    setteam2SetsInput(defaultTeam2Sets);
+    setTeam2PtsInput(defaultTeam2Pts);
+    setTeam2SetsInput(defaultTeam2Sets);
     setTeam2GamesInput(defaultTeam2Games);
   };
 
@@ -131,44 +133,16 @@ const MQTTComponent = () => {
         {/* Input Card */}
         <div className="col-md-6">
           <div className="card shadow-sm">
-            <div className="card-header bg-secondary text-white">
-              Input Values
-            </div>
+            <h1 className="card-header">Input Values</h1>
             <div className="card-body">
-              <div className="row mb-3">
-                <div className="col-4">
-                  <label className="form-label">X Coordinate</label>
-                  <input
-                    className="form-control"
-                    value={xInput}
-                    onChange={(e) => setXInput(e.target.value)}
-                  />
-                </div>
-                <div className="col-4">
-                  <label className="form-label">Y Coordinate</label>
-                  <input
-                    className="form-control"
-                    value={yInput}
-                    onChange={(e) => setYInput(e.target.value)}
-                  />
-                </div>
-                <div className="col-4">
-                  <label className="form-label">Z Coordinate</label>
-                  <input
-                    className="form-control"
-                    value={zInput}
-                    onChange={(e) => setZInput(e.target.value)}
-                  />
-                </div>
-              </div>
-
+              {/* Team 1 Inputs */}
               <div className="row mb-3">
                 <div className="col-4">
                   <label className="form-label">Team 1 Points</label>
                   <input
                     className="form-control"
                     value={team1PtsInput}
-                    onChange={(e) => setteam1PtsInput(e.target.value)}
+                    onChange={(e) => setTeam1PtsInput(e.target.value)}
                   />
                 </div>
                 <div className="col-4">
@@ -176,7 +150,7 @@ const MQTTComponent = () => {
                   <input
                     className="form-control"
                     value={team1SetsInput}
-                    onChange={(e) => setteam1SetsInput(e.target.value)}
+                    onChange={(e) => setTeam1SetsInput(e.target.value)}
                   />
                 </div>
                 <div className="col-4">
@@ -189,13 +163,14 @@ const MQTTComponent = () => {
                 </div>
               </div>
 
+              {/* Team 2 Inputs */}
               <div className="row mb-3">
                 <div className="col-4">
                   <label className="form-label">Team 2 Points</label>
                   <input
                     className="form-control"
                     value={team2PtsInput}
-                    onChange={(e) => setteam2PtsInput(e.target.value)}
+                    onChange={(e) => setTeam2PtsInput(e.target.value)}
                   />
                 </div>
                 <div className="col-4">
@@ -203,7 +178,7 @@ const MQTTComponent = () => {
                   <input
                     className="form-control"
                     value={team2SetsInput}
-                    onChange={(e) => setteam2SetsInput(e.target.value)}
+                    onChange={(e) => setTeam2SetsInput(e.target.value)}
                   />
                 </div>
                 <div className="col-4">
@@ -221,8 +196,6 @@ const MQTTComponent = () => {
                   Send Values
                 </button>
               </div>
-
-              {/* Clear Inputs Button */}
               <div className="d-grid">
                 <button className="btn btn-danger" onClick={handleClearInputs}>
                   Clear Inputs
@@ -235,19 +208,11 @@ const MQTTComponent = () => {
         {/* Live Values Card */}
         <div className="col-md-6">
           <div className="card shadow-sm">
-            <div className="card-header bg-secondary text-white">
-              Live MQTT Values
-            </div>
+            <h1 className="card-header">Live MQTT Values</h1>
             <div className="card-body">
               <ul className="list-group list-group-flush">
                 <li className="list-group-item">
-                  <strong>X:</strong> {liveX} mm
-                </li>
-                <li className="list-group-item">
-                  <strong>Y:</strong> {liveY} mm
-                </li>
-                <li className="list-group-item">
-                  <strong>Z:</strong> {liveZ} mm
+                  <strong>Server:</strong> {liveServer}
                 </li>
                 <li className="list-group-item">
                   <strong>Centroid:</strong> {liveCentroid} mm
