@@ -9,7 +9,7 @@ https://docs.djangoproject.com/en/5.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
-
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -23,9 +23,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-ehs9s+gd!blj&xs()b@0m4y@kqulz%8r+d)nyh^kibv85e7!zg'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DJANGO_DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    'TennisTracker.benjaminf.net', # Your production domain
+    # Add other domains if necessary, e.g., www version or internal docker hostname
+    'localhost', # Often needed for health checks or local access
+    '127.0.0.1',
+]
 
 
 # Application definition
@@ -58,7 +63,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173", # Your React frontend dev server
     # Add your production frontend URL here later if needed
     "https://benjaminf.net",
-    "https://blenderUI.benjaminf.net",
+    "https://TennisTracker.benjaminf.net",
 ]
 
 ROOT_URLCONF = 'backend.urls'
@@ -79,8 +84,20 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'backend.wsgi.application'
+#WSGI_APPLICATION = 'backend.wsgi.application'
+# --- Ensure ASGI Application is set for Channels ---
+ASGI_APPLICATION = 'backend.asgi.application'
 
+# --- Channels Layers (Ensure Redis is configured correctly for production) ---
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            # Use environment variables or direct values for production Redis
+            "hosts": [(os.environ.get('REDIS_HOST', 'localhost'), int(os.environ.get('REDIS_PORT', 6379)))],
+        },
+    },
+}
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
@@ -89,14 +106,14 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'tracker-website',
-        'USER': 'man',
-        'PASSWORD': 'iLoveFirmware',
-        'HOST': 'benjaminf.net', # e.g., 'localhost' or an IP
-        'PORT': '3309', # Default MySQL port
+        'NAME': os.environ.get('DB_NAME'),
+        'USER': os.environ.get('DB_USER'),
+        'PASSWORD': os.environ.get('DB_PASSWORD'),
+        'HOST': os.environ.get('DB_HOST'), # Should be 'tracker_mysql' when running in docker
+        'PORT': os.environ.get('DB_PORT', '3306'),
         'OPTIONS': {
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-        },
+             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+         },
     }
 }
 

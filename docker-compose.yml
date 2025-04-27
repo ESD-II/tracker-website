@@ -19,10 +19,11 @@ services:
 # Inside tracker-react service:
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.tracker-react.rule=Host(`benjaminf.net`)" # Main host rule
-      - "traefik.http.routers.tracker-react.entrypoints=websecure"
-      - "traefik.http.routers.tracker-react.tls.certresolver=myresolver"
-      - "traefik.http.services.tracker-react.loadbalancer.server.port=5173" # Port Vite runs on INSIDE container (check Dockerfile.react)
+      # --- CHANGE THIS ROUTER ---
+      - "traefik.http.routers.tennis-tracker-react.rule=Host(`TennisTracker.benjaminf.net`)" # Use new Host
+      - "traefik.http.routers.tennis-tracker-react.entrypoints=websecure" # Assuming HTTPS entrypoint
+      - "traefik.http.routers.tennis-tracker-react.tls.certresolver=myresolver" # Your Let's Encrypt resolver name
+      - "traefik.http.services.tennis-tracker-react.loadbalancer.server.port=5173" # Internal port Vite dev server runs on (adjust if using nginx/apache in container)
 
   # Blender Container
   tracker_blender:
@@ -106,16 +107,16 @@ services:
       - tracker_mysql # Wait for mysql service to start
     labels:
       - "traefik.enable=true"
-      # HTTP Router (for API calls)
-      - "traefik.http.routers.tracker-django-http.rule=Host(`benjaminf.net`) && (PathPrefix(`/api`) || PathPrefix(`/admin`) || PathPrefix(`/static`))" # Adjust host and paths
-      - "traefik.http.routers.tracker-django-http.entrypoints=websecure" # Assuming HTTPS
-      - "traefik.http.routers.tracker-django-http.tls.certresolver=myresolver" # Your cert resolver
-      - "traefik.http.services.tracker-django-http.loadbalancer.server.port=8000" # Port Daphne/Uvicorn listens on *inside* the container
-      # WebSocket Router
-      - "traefik.http.routers.tracker-django-ws.rule=Host(`benjaminf.net`) && PathPrefix(`/ws`)" # Adjust host
-      - "traefik.http.routers.tracker-django-ws.entrypoints=websecure" # Assuming WSS
-      - "traefik.http.routers.tracker-django-ws.tls.certresolver=myresolver" # Your cert resolver
-      - "traefik.http.services.tracker-django-ws.loadbalancer.server.port=8000" # Same internal port
+      # HTTP Router (API, Admin, Static) - CHANGE HOST
+      - "traefik.http.routers.tennis-tracker-django-http.rule=Host(`TennisTracker.benjaminf.net`) && (PathPrefix(`/api`) || PathPrefix(`/admin`) || PathPrefix(`/static`))"
+      - "traefik.http.routers.tennis-tracker-django-http.entrypoints=websecure"
+      - "traefik.http.routers.tennis-tracker-django-http.tls.certresolver=myresolver"
+      - "traefik.http.services.tennis-tracker-django-http.loadbalancer.server.port=8000"
+      # WebSocket Router - CHANGE HOST
+      - "traefik.http.routers.tennis-tracker-django-ws.rule=Host(`TennisTracker.benjaminf.net`) && PathPrefix(`/ws`)"
+      - "traefik.http.routers.tennis-tracker-django-ws.entrypoints=websecure"
+      - "traefik.http.routers.tennis-tracker-django-ws.tls.certresolver=myresolver"
+      - "traefik.http.services.tennis-tracker-django-ws.loadbalancer.server.port=8000"
 
 networks:
   traefik_network:
