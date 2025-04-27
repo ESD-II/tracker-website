@@ -1,6 +1,6 @@
 services:
   # React App Container (unchanged)
-  tracker-react:
+  tracker_react:
     build:
       context: .
       dockerfile: Dockerfile.react
@@ -86,7 +86,7 @@ services:
       - bridge
 
 
-  tracker-django:
+  tracker_django:
     build:
       context: .
       dockerfile: Dockerfile.django
