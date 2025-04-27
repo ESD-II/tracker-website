@@ -1,0 +1,86 @@
+/* src/components/ReplayControls.css */
+.replay-controls {
+    padding: 15px;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
+    max-height: 30vh;
+    overflow-y: auto;
+}
+
+.replay-controls h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: #343a40;
+}
+
+.replay-controls ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.replay-controls li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 5px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.replay-controls li:last-child {
+    border-bottom: none;
+}
+
+.replay-controls li.active {
+    background-color: #e7f3ff; /* Highlight active replay */
+}
+
+
+.replay-controls span {
+    font-size: 0.9rem;
+    color: #495057;
+}
+
+.replay-controls .button-group {
+    display: flex;
+    gap: 5px; /* Space between buttons */
+}
+
+
+.replay-controls button {
+    padding: 4px 8px;
+    font-size: 0.85rem;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.replay-controls button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.replay-controls .replay-button {
+    background-color: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+.replay-controls .replay-button:hover:not(:disabled) {
+    background-color: #0056b3;
+}
+
+.replay-controls .stop-button {
+    background-color: #dc3545;
+    color: white;
+    border-color: #dc3545;
+}
+.replay-controls .stop-button:hover:not(:disabled) {
+    background-color: #c82333;
+}
+
+.error-message {
+    color: #dc3545;
+    font-weight: bold;
+}

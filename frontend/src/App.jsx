@@ -8,6 +8,7 @@ import Footer from "./components/footer/Footer.jsx";
 import Home from "./components/home/Home.jsx";
 import About from "./components/about/About.jsx";
 import NotFound from "./components/notfound/NotFound.jsx";
+import Replay from "./components/replay/Replay";
 
 function App() {
   const [count, setCount] = useState(0);
@@ -24,6 +25,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/about" element={<About />} />
+            <Route path="/replay" element={<Replay />} />
             {/* Catch-all route for undefined pages */}
             <Route path="*" element={<NotFound />} />
           </Routes>

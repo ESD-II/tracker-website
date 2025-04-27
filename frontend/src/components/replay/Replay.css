@@ -1,0 +1,23 @@
+/* src/pages/Replay.css */
+.replay-page-container {
+    display: flex;
+    flex-direction: column;
+    padding: 20px; /* Add padding around the content */
+  }
+  
+  .replay-page-container h1 {
+    margin-bottom: 20px; /* Space below title */
+  }
+  
+  /* Ensure components stack vertically */
+  .replay-page-container > div {
+    width: 100%; /* Make components take full width */
+  }
+  
+  /* You might want to constrain the width on larger screens */
+  @media (min-width: 992px) {
+    .replay-page-container {
+      max-width: 960px; /* Example max width */
+      margin: 0 auto; /* Center on large screens */
+    }
+  }
