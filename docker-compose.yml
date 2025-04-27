@@ -16,10 +16,13 @@ services:
     networks:
       - traefik_network
       - internal
+# Inside tracker-react service:
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.blender-react.rule=Host(`blenderUI.benjaminf.net`)"
-      - "traefik.http.services.blender-react.loadbalancer.server.port=80"
+      - "traefik.http.routers.tracker-react.rule=Host(`benjaminf.net`)" # Main host rule
+      - "traefik.http.routers.tracker-react.entrypoints=websecure"
+      - "traefik.http.routers.tracker-react.tls.certresolver=myresolver"
+      - "traefik.http.services.tracker-react.loadbalancer.server.port=5173" # Port Vite runs on INSIDE container (check Dockerfile.react)
 
   # Blender Container
   tracker_blender:
@@ -81,6 +84,38 @@ services:
       - internal
       - bridge
 
+
+  tracker-django:
+    build:
+      context: .
+      dockerfile: Dockerfile.django
+    container_name: tracker-django
+    restart: unless-stopped
+    env_file:
+      - .env # Make sure DB creds, SECRET_KEY, DEBUG etc are here
+    volumes:
+      # Optional: Mount code for development hot-reloading (if needed)
+      # - ./backend:/app/backend
+      # - ./tracker:/app/tracker
+      # Mount supervisor config if not copied in Dockerfile
+      - ./backend/config:/app/backend/config
+    networks:
+      - internal # To talk to MySQL and MQTT
+      - traefik_network # To receive requests from Traefik
+    depends_on:
+      - tracker_mysql # Wait for mysql service to start
+    labels:
+      - "traefik.enable=true"
+      # HTTP Router (for API calls)
+      - "traefik.http.routers.tracker-django-http.rule=Host(`benjaminf.net`) && (PathPrefix(`/api`) || PathPrefix(`/admin`) || PathPrefix(`/static`))" # Adjust host and paths
+      - "traefik.http.routers.tracker-django-http.entrypoints=websecure" # Assuming HTTPS
+      - "traefik.http.routers.tracker-django-http.tls.certresolver=myresolver" # Your cert resolver
+      - "traefik.http.services.tracker-django-http.loadbalancer.server.port=8000" # Port Daphne/Uvicorn listens on *inside* the container
+      # WebSocket Router
+      - "traefik.http.routers.tracker-django-ws.rule=Host(`benjaminf.net`) && PathPrefix(`/ws`)" # Adjust host
+      - "traefik.http.routers.tracker-django-ws.entrypoints=websecure" # Assuming WSS
+      - "traefik.http.routers.tracker-django-ws.tls.certresolver=myresolver" # Your cert resolver
+      - "traefik.http.services.tracker-django-ws.loadbalancer.server.port=8000" # Same internal port
 
 networks:
   traefik_network:

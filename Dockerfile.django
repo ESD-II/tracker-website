@@ -1,0 +1,44 @@
+# Dockerfile.django
+
+# Choose an appropriate Python base image
+FROM python:3.11-slim
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+
+# Set work directory
+WORKDIR /app
+
+# Install system dependencies (if any - e.g., for mysqlclient or other libs)
+# RUN apt-get update && apt-get install -y --no-install-recommends \
+#     build-essential default-libmysqlclient-dev \
+#  && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+# Copy only requirements first to leverage Docker cache
+COPY ./backend/requirements.txt /app/backend/
+RUN pip install --no-cache-dir -r /app/backend/requirements.txt
+
+# Install application dependencies (like daphne/uvicorn)
+# Assuming these are in your requirements.txt. If not, add them:
+# RUN pip install --no-cache-dir daphne # or uvicorn gunicorn
+
+# Copy project code
+COPY ./backend /app/backend
+# If your tracker app is inside backend:
+COPY ./tracker /app/tracker
+COPY ./manage.py /app/
+
+# Expose the port the ASGI server will run on
+EXPOSE 8000
+
+# # --- OPTION 1: Simple Command (runs only ASGI server) ---
+# # Assumes your ASGI app object is at backend.asgi:application
+# # You would need to run migrations and the bridge manually or separately
+# # CMD ["daphne", "-b", "0.0.0.0", "-p", "8000", "backend.asgi:application"]
+
+# --- OPTION 2: Use an entrypoint script for migrations, bridge, and ASGI server ---
+COPY ./entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+ENTRYPOINT ["/app/entrypoint.sh"]
