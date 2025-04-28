@@ -11,9 +11,7 @@ function NavigationBar() {
         <Navbar.Collapse id="navbarSupportedContent">
           <Nav className="me-auto">
             <Nav.Link href="/">Home</Nav.Link>
-            <Nav.Link href="/about">About</Nav.Link>
-            <Nav.Link href="/history">History</Nav.Link>
-            <Nav.Link href="/admin">Admin</Nav.Link>
+            <Nav.Link href="/replay">Replay</Nav.Link>
           </Nav>
 
           {/* Right side GitHub, LinkedIn, and Admin Login */}
