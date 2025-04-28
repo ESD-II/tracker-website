@@ -182,4 +182,5 @@ data/#innodb_temp
 !data/.gitkeep
 
 config/*
-!config/.gitkeep
+!config/.gitkeep.env.development
+.env.production
