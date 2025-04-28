@@ -27,7 +27,7 @@ RUN pip install --no-cache-dir -r /app/backend/requirements.txt
 # Copy project code
 COPY ./backend /app/backend
 # If your tracker app is inside backend:
-COPY ./tracker /app/tracker
+COPY ./backend /app/backend
 COPY ./manage.py /app/
 
 # Expose the port the ASGI server will run on
