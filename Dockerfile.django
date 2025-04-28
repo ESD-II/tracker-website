@@ -10,35 +10,35 @@ ENV PYTHONUNBUFFERED 1
 # Set work directory
 WORKDIR /app
 
-# Install system dependencies (if any - e.g., for mysqlclient or other libs)
-# RUN apt-get update && apt-get install -y --no-install-recommends \
-#     build-essential default-libmysqlclient-dev \
-#  && rm -rf /var/lib/apt/lists/*
+# Install system dependencies (if any)
+# RUN apt-get update && apt-get install -y --no-install-recommends build-essential default-libmysqlclient-dev && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
-# Copy only requirements first to leverage Docker cache
-COPY ./backend/requirements.txt /app/backend/
-RUN pip install --no-cache-dir -r /app/backend/requirements.txt
+# Copy requirements file from the correct sub-directory
+COPY ./backend/requirements.txt /app/
+# Install requirements into the WORKDIR
+RUN pip install --no-cache-dir -r requirements.txt
+# Note: No need to create /app/backend/ just for requirements
 
-# Install application dependencies (like daphne/uvicorn)
-# Assuming these are in your requirements.txt. If not, add them:
-# RUN pip install --no-cache-dir daphne # or uvicorn gunicorn
+# Install application dependencies (like daphne/supervisor) - Should be in requirements.txt
 
-# Copy project code
-COPY ./backend /app/backend
-# If your tracker app is inside backend:
-COPY ./backend /app/backend
-COPY ./manage.py /app/
+# Copy project code and app code from the correct sub-directory
+# Copy the directory containing settings.py, asgi.py etc.
+COPY ./backend/backend /app/backend
+# Copy the directory containing manage.py (we just need manage.py itself later)
+COPY ./backend/manage.py /app/manage.py
+# Copy your tracker app directory (Assuming it's in ./backend/)
+COPY ./backend/tracker /app/tracker
+# Copy the supervisor config (Assuming it's in ./backend/config/)
+COPY ./backend/config /app/config
+
+
+# Copy entrypoint script from the root context
+COPY ./entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
 
 # Expose the port the ASGI server will run on
 EXPOSE 8000
 
-# # --- OPTION 1: Simple Command (runs only ASGI server) ---
-# # Assumes your ASGI app object is at backend.asgi:application
-# # You would need to run migrations and the bridge manually or separately
-# # CMD ["daphne", "-b", "0.0.0.0", "-p", "8000", "backend.asgi:application"]
-
-# --- OPTION 2: Use an entrypoint script for migrations, bridge, and ASGI server ---
-COPY ./entrypoint.sh /app/entrypoint.sh
-RUN chmod +x /app/entrypoint.sh
+# Run the entrypoint script
 ENTRYPOINT ["/app/entrypoint.sh"]
