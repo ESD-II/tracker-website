@@ -4,7 +4,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.react
-    container_name: tracker-react
+    container_name: tracker_react
     restart: always
     env_file:
       - .env
@@ -91,7 +91,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.django
-    container_name: tracker-django
+    container_name: tracker_django
     restart: unless-stopped
     env_file:
       - .env # Make sure DB creds, SECRET_KEY, DEBUG etc are here
