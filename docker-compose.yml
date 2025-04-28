@@ -68,6 +68,7 @@ services:
       - ./my.cnf:/etc/mysql/my.cnf
     networks:
       - internal
+      - bridge
       
   tracker_mqtt:
     build:

@@ -4,7 +4,7 @@ from django.core.management.base import BaseCommand
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from django.utils import timezone # For timezone-aware datetimes
-from tracker.models import Point, Coordinate # Import your models
+from backend.models import Point, Coordinate
 import json 
 import time # For monotonic clock for relative timing
 import os

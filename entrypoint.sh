@@ -1,21 +1,26 @@
 #!/bin/sh
 
-# Exit on error
+# Exit immediately if a command exits with a non-zero status.
 set -e
 
 echo "Waiting for MySQL..."
-# Use nc (netcat) or wait-for-it.sh to wait for the database if needed
-# This requires installing netcat in the Dockerfile: apt-get install -y netcat-traditional
+# This loop waits for the MySQL service (named tracker_mysql) to be reachable on port 3306
+# Requires netcat (nc) to be installed in the Django container (see Dockerfile modification below)
 while ! nc -z tracker_mysql 3306; do
+  echo "Waiting for MySQL..."
   sleep 1
 done
 echo "MySQL started"
 
+# --- ADD THIS SECTION ---
 # Apply database migrations
 echo "Applying database migrations..."
+# Assumes manage.py is in the WORKDIR (/app)
 python manage.py migrate --noinput
+echo "Migrations applied."
+# --- END OF ADDED SECTION ---
 
 # Start Supervisor to manage Daphne and MQTT Bridge
 echo "Starting supervisord..."
-# Corrected path based on the updated COPY command
+# Ensure the path to the config file is correct relative to WORKDIR (/app)
 exec supervisord -c /app/config/supervisord.conf
