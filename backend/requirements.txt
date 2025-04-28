@@ -14,14 +14,12 @@ Django==5.0.3
 django-cors-headers==4.3.1
 django-db-connection-pool==1.2.4
 django-debug-toolbar==4.3.0
-django-email-log==1.4.0
 django-filter==23.5
-django-mail-queue==3.2.5
-django-mailer==2.3.1
-django-sslserver==0.22
-django-walletpass==3.0
 djangorestframework==3.14.0
 djangorestframework-jwt==1.0.1
 python-dotenv==1.0.0
 mysqlclient==2.2.0
 supervisor
+paho-mqtt==2.1.0
+daphne
+channels_redis

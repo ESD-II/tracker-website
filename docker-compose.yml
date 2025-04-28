@@ -8,24 +8,22 @@ services:
     restart: always
     env_file:
       - .env
-    ports:
-      - "5173:5173"
+#    ports:
+#      - "5173:5173"
     volumes:
       - ./frontend:/workspace/frontend
       - ./frontend/node_modules:/workspace/frontend/node_modules
     networks:
       - traefik_network
       - internal
-# Inside tracker-react service:
     labels:
       - "traefik.enable=true"
-      # --- CHANGE THIS ROUTER ---
-      - "traefik.http.routers.tennis-tracker-react.rule=Host(`TennisTracker.benjaminf.net`)" # Use new Host
-      - "traefik.http.routers.tennis-tracker-react.entrypoints=websecure" # Assuming HTTPS entrypoint
-      - "traefik.http.routers.tennis-tracker-react.tls.certresolver=myresolver" # Your Let's Encrypt resolver name
-      - "traefik.http.services.tennis-tracker-react.loadbalancer.server.port=5173" # Internal port Vite dev server runs on (adjust if using nginx/apache in container)
+      - "traefik.http.routers.tennis-tracker-react.rule=Host(`TennisTracker.benjaminf.net`)"
+      - "traefik.http.routers.tennis-tracker-react.entrypoints=websecure"
+      - "traefik.http.routers.tennis-tracker-react.tls.certresolver=myresolver"
+      - "traefik.http.services.tennis-tracker-react.loadbalancer.server.port=80"
 
-  # Blender Container
+  # Blender Container (unchanged)
   tracker_blender:
     build:
       context: .
@@ -37,7 +35,7 @@ services:
       - ./config:/config
       - ./workspace:/workspace
     ports:
-      - "55001:55001" 
+      - "55001:55001"
     restart: unless-stopped
     networks:
       - traefik_network
@@ -47,20 +45,13 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.blender.rule=Host(`blender.benjaminf.net`)"
       - "traefik.http.services.blender.loadbalancer.server.port=55001"
-#    deploy:
-#      resources:
-#        reservations:
-#          devices:
-#            - driver: nvidia
-#              count: all
-#              capabilities: [compute, video, graphics, utility, display]
 
   tracker_mysql:
     image: mysql:8.0
     container_name: tracker_mysql
     restart: unless-stopped
     ports:
-      - "3309:3306" # no traefik routing here, only exposed port
+      - "3309:3306"
     env_file:
       - .env
     volumes:
@@ -69,7 +60,7 @@ services:
     networks:
       - internal
       - bridge
-      
+
   tracker_mqtt:
     build:
       context: .
@@ -77,7 +68,7 @@ services:
     container_name: tracker_mqtt
     restart: unless-stopped
     ports:
-      - "1884:1883" # no traefik routing here, only exposed port
+      - "1884:1883"
     volumes:
       - ./mqtt/config:/mosquitto/config
       - ./mqtt/data:/mosquitto/data
@@ -86,6 +77,15 @@ services:
       - internal
       - bridge
 
+  # --- ADD THIS SERVICE ---
+  tracker_redis:
+    image: redis:7-alpine # Using version 7 alpine image
+    container_name: tracker_redis
+    restart: unless-stopped
+    networks:
+      - internal # Must be on the internal network for Django to reach it
+    # No ports exposed to host needed unless debugging directly
+    # No volumes needed for basic channel layer usage (messages are ephemeral)
 
   tracker_django:
     build:
@@ -94,26 +94,24 @@ services:
     container_name: tracker_django
     restart: unless-stopped
     env_file:
-      - .env # Make sure DB creds, SECRET_KEY, DEBUG etc are here
+      - .env
     volumes:
       # Optional: Mount code for development hot-reloading (if needed)
       # - ./backend:/app/backend
-      # - ./tracker:/app/tracker
       # Mount supervisor config if not copied in Dockerfile
       - ./backend/config:/app/backend/config
     networks:
-      - internal # To talk to MySQL and MQTT
-      - traefik_network # To receive requests from Traefik
+      - internal # To talk to MySQL, MQTT, and Redis
+      - traefik_network
     depends_on:
       - tracker_mysql # Wait for mysql service to start
+      - tracker_redis # --- ADD DEPENDENCY ON REDIS ---
     labels:
       - "traefik.enable=true"
-      # HTTP Router (API, Admin, Static) - CHANGE HOST
       - "traefik.http.routers.tennis-tracker-django-http.rule=Host(`TennisTracker.benjaminf.net`) && (PathPrefix(`/api`) || PathPrefix(`/admin`) || PathPrefix(`/static`))"
       - "traefik.http.routers.tennis-tracker-django-http.entrypoints=websecure"
       - "traefik.http.routers.tennis-tracker-django-http.tls.certresolver=myresolver"
       - "traefik.http.services.tennis-tracker-django-http.loadbalancer.server.port=8000"
-      # WebSocket Router - CHANGE HOST
       - "traefik.http.routers.tennis-tracker-django-ws.rule=Host(`TennisTracker.benjaminf.net`) && PathPrefix(`/ws`)"
       - "traefik.http.routers.tennis-tracker-django-ws.entrypoints=websecure"
       - "traefik.http.routers.tennis-tracker-django-ws.tls.certresolver=myresolver"

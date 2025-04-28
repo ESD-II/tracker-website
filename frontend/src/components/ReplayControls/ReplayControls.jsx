@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import './ReplayControls.css'; // Optional: for styling
 
 // --- Environment URL ---
+// This correctly uses the environment variable set during build or dev
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 function ReplayControls({ onStartReplay, onStopReplay, isPlayingReplay, currentReplayPointId }) {
@@ -15,14 +16,13 @@ function ReplayControls({ onStartReplay, onStopReplay, isPlayingReplay, currentR
         setIsLoading(true);
         setError(null);
 
-        // *** Construct API URL from environment variable ***
+        // *** Construct API URL from environment variable (This was already correct) ***
         const apiUrl = `${API_BASE_URL}/api/tracker/points/`;
         console.log(`Fetching points list from: ${apiUrl}`)
 
-        fetch(apiUrl) // Adjust URL if needed
+        fetch(apiUrl)
             .then(res => {
                 if (!res.ok) {
-                    // Log more info on failure
                     return res.text().then(text => {
                        throw new Error(`Failed to fetch points (Status: ${res.status}), Body: ${text}`);
                     });
@@ -38,12 +38,10 @@ function ReplayControls({ onStartReplay, onStopReplay, isPlayingReplay, currentR
                 setError(err.message);
                 setIsLoading(false);
             });
-    // IMPORTANT: No dependencies needed here if API_BASE_URL is constant per build.
     }, []); // Empty dependency array = run once on mount
 
     return (
-        // ... (JSX rendering remains the same) ...
-         <div className="replay-controls">
+        <div className="replay-controls">
             <h3>Recorded Points</h3>
             {isLoading && <p>Loading points...</p>}
             {error && <p className="error-message">Error loading points: {error}</p>}
