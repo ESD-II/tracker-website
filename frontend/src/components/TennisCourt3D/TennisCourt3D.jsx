@@ -275,9 +275,9 @@ function TennisCourt3D({ isReplayActive, replayPointId }) {
     // --- Replay Loop Effect ---
      useEffect(() => {
         // Conditions to run the loop
-        if (!isPlayingReplay || replayCoords.length === 0 || currentReplayCoordIndex >= replayCoords.length) {
+        if (!isReplayActive || replayCoords.length === 0 || currentReplayCoordIndex >= replayCoords.length) {
             // If replay finished naturally (index out of bounds)
-            if (isPlayingReplay && replayCoords.length > 0 && currentReplayCoordIndex >= replayCoords.length) {
+            if (isReplayActive && replayCoords.length > 0 && currentReplayCoordIndex >= replayCoords.length) {
                 console.log("Replay loop finished for point:", replayPointId);
                 // Optionally notify parent component that replay is done, e.g., via a callback prop
                 // onStopReplay?.(); // Call parent's stop function if provided
@@ -316,7 +316,7 @@ function TennisCourt3D({ isReplayActive, replayPointId }) {
             const delay = nextCoord.relative_time_ms - currentCoord.relative_time_ms;
             replayTimeoutRef.current = setTimeout(() => {
                  // Check mount status before updating index
-                 if (isMounted.current && isPlayingReplay) { // Double check isPlayingReplay hasn't changed
+                 if (isMounted.current && isReplayActive) { // Double check isReplayActive hasn't changed
                     setCurrentReplayCoordIndex(prevIndex => prevIndex + 1);
                  }
             }, delay > 0 ? delay : 5); // Use a minimum delay (e.g., 5ms) if coords have same timestamp
@@ -332,7 +332,7 @@ function TennisCourt3D({ isReplayActive, replayPointId }) {
             }
         };
     // Dependencies: run loop step when index changes or replay starts/coords arrive
-    }, [isPlayingReplay, replayCoords, currentReplayCoordIndex, replayPointId]);
+    }, [isReplayActive, replayCoords, currentReplayCoordIndex, replayPointId]);
 
 
     return (
