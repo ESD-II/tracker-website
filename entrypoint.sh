@@ -17,5 +17,5 @@ python manage.py migrate --noinput
 
 # Start Supervisor to manage Daphne and MQTT Bridge
 echo "Starting supervisord..."
-exec supervisord -c /app/backend/config/supervisord.conf
-# Make sure the path to supervisord.conf is correct
+# Corrected path based on the updated COPY command
+exec supervisord -c /app/config/supervisord.conf
