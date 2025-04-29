@@ -12,13 +12,15 @@ while ! nc -z tracker_mysql 3306; do
 done
 echo "MySQL started"
 
-# --- ADD THIS SECTION ---
+# Run database migrations if necessary
+echo "Building database migrations..."
+python manage.py makemigrations
+
 # Apply database migrations
 echo "Applying database migrations..."
 # Assumes manage.py is in the WORKDIR (/app)
 python manage.py migrate --noinput
 echo "Migrations applied."
-# --- END OF ADDED SECTION ---
 
 # Start Supervisor to manage Daphne and MQTT Bridge
 echo "Starting supervisord..."
