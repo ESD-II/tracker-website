@@ -88,7 +88,7 @@ TEMPLATES = [
     },
 ]
 
-#WSGI_APPLICATION = 'backend.wsgi.application'
+WSGI_APPLICATION = 'backend.wsgi.application'
 # --- Ensure ASGI Application is set for Channels ---
 ASGI_APPLICATION = 'backend.asgi.application'
 
