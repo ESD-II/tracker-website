@@ -6,6 +6,8 @@ services:
       dockerfile: Dockerfile.react
     container_name: tracker_react
     restart: always
+#    ports:
+#      - "8088:80"
     env_file:
       - .env
     volumes:
@@ -13,7 +15,7 @@ services:
       - ./frontend/node_modules:/workspace/frontend/node_modules
     networks:
       - traefik_network
-      - internal
+#      - internal
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.tennis-tracker-react.rule=Host(`TennisTracker.benjaminf.net`)"
@@ -57,6 +59,7 @@ services:
       - ./my.cnf:/etc/mysql/my.cnf
     networks:
       - internal
+      - traefik_network
       - bridge
 
   tracker_mqtt:
@@ -73,6 +76,7 @@ services:
       - ./mqtt/log:/mosquitto/log
     networks:
       - internal
+      - traefik_network
       - bridge
 
   tracker_redis:
@@ -81,6 +85,7 @@ services:
     restart: unless-stopped
     networks:
       - internal
+      - traefik_network
 
   tracker_django:
     build:
