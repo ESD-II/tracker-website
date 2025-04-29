@@ -138,16 +138,16 @@ def on_message(client, userdata, msg):
         # Send data to the channel layer group (for live view)
         if message_type_for_channels != "unknown":
             async_to_sync(channel_layer.group_send)(
-                CHANNEL_GROUP_NAME,
+                CHANNEL_GROUP_NAME, # e.g., 'tennis_updates'
                 {
-                    'type': 'tracker.update',
+                    # **** THIS MUST MATCH THE CONSUMER METHOD ****
+                    'type': 'tracker_update', # Calls tracker_update in BallTrackerConsumer
                     'data': {
                         'type': message_type_for_channels,
                         'payload': payload_data
                     }
                 }
             )
-
     except Exception as e:
         print(f"Error processing MQTT message or interacting with DB/Channels: {e}")
         print(f"Topic: {msg.topic}, Payload: {msg.payload}")
