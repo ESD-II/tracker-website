@@ -6,7 +6,7 @@ import './Replay.css';
 
 // Example internal "ad" data (Ensure these arrays are not empty)
 const leftAds = [
-  { id: 'left1', type: 'image', src: '/raidShadowLegends.jpg', alt: 'Raid Shadow Legends Ad', link: '#' },
+  { id: 'left1', type: 'image', src: 'https://via.placeholder.com/160x600.png?text=Left+Ad+1', alt: 'Left Ad 1', link: '#' },
   { id: 'left2', type: 'image', src: 'https://via.placeholder.com/160x600/eee/888?text=Sponsor+A', alt: 'Sponsor A', link: '#' },
   { id: 'left3', type: 'text', text: 'Check out our new features!' },
 ];
