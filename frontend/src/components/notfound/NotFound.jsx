@@ -1,5 +1,3 @@
-import "../home/Home.css";
-
 const NotFound = () => {
   return (
     <main role="main">

@@ -5,8 +5,6 @@ import "./App.css";
 
 import NavigationBar from "./components/navigation/NavigationBar.jsx";
 import Footer from "./components/footer/Footer.jsx";
-import Home from "./components/home/Home.jsx";
-import About from "./components/about/About.jsx";
 import NotFound from "./components/notfound/NotFound.jsx";
 import Replay from "./components/replay/Replay";
 
@@ -24,7 +22,6 @@ function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Replay />} />
-            <Route path="/about" element={<About />} />
             {/* Catch-all route for undefined pages */}
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -184,3 +184,5 @@ data/#innodb_temp
 config/*
 !config/.gitkeep.env.development
 .env.production
+
+.vscode/
