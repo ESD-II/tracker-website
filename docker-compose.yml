@@ -106,6 +106,9 @@ services:
     depends_on:
       - tracker_mysql
       - tracker_redis
+#    ports:
+#      - "8001:8000"
+#    command: daphne -b 0.0.0.0 -p 8000 backend.asgi:application
     labels:
       - "traefik.enable=true"
 
@@ -127,6 +130,38 @@ services:
       - "traefik.http.routers.tennis-tracker-django-ws.tls.certresolver=myresolver"
       # --- Link WebSocket router to the single service ---
       - "traefik.http.routers.tennis-tracker-django-ws.service=tennis-tracker-django"
+
+  # --- NEW SERVICE: Dedicated MQTT Bridge Worker ---
+  tracker_mqtt_bridge:
+    build:
+      context: .
+      dockerfile: Dockerfile.django # Uses the same build context and Dockerfile
+    container_name: tracker_mqtt_bridge
+    restart: unless-stopped
+    env_file:
+      - .env # Needs same environment variables
+    # No volumes needed if Dockerfile copies code correctly
+    networks:
+      - internal # ONLY needs internal network to reach DB, Redis, MQTT
+    depends_on:
+      - tracker_mysql # Needs DB ready
+      - tracker_redis # Needs Redis ready for channel layer
+      - tracker_mqtt # Needs MQTT broker ready
+    # --- Override the command to run the bridge ---
+    command: >
+      sh -c "
+        echo 'Waiting for MySQL in Bridge...' &&
+        while ! nc -z tracker_mysql 3306; do sleep 1; done &&
+        echo 'MySQL ready in Bridge.' &&
+        echo 'Waiting for Redis in Bridge...' &&
+        while ! nc -z tracker_redis 6379; do sleep 1; done &&
+        echo 'Redis ready in Bridge.' &&
+        echo 'Waiting for MQTT in Bridge...' &&
+        while ! nc -z tracker_mqtt 1883; do sleep 1; done &&
+        echo 'MQTT ready in Bridge.' &&
+        echo 'Starting MQTT Bridge command...' &&
+        python manage.py run_mqtt_bridge
+      "
 
 networks:
   traefik_network:
