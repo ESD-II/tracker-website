@@ -1,23 +1,62 @@
 /* src/pages/Replay.css */
+
 .replay-page-container {
-    display: flex;
+  padding: 1em;
+}
+
+/* This is the most important rule */
+.replay-layout-container {
+  display: flex;
+  flex-direction: row; /* Default is row, but explicit is good */
+  justify-content: space-between; /* Or space-around, or center */
+  gap: 1em;
+  align-items: flex-start; /* Align items at the top */
+  /* Optional: Add width: 100% if its parent restricts width */
+  width: 100%;
+}
+.replay-center-content {
+  flex-grow: 1; /* Allows it to take up remaining space */
+  min-width: 0; /* Necessary for flex items containing large content to shrink properly */
+  /* Remove any fixed width/max-width here unless intended */
+}
+
+.replay-sidebar {
+  flex-shrink: 0; /* Prevents shrinking */
+  flex-basis: 170px; /* Suggests a width */
+  width: 170px; /* Explicit width can also help */
+  padding: 0.5em;
+  /* background-color: #f0f0f0; */ /* Uncomment to visualize */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+
+/* Optional: Responsive adjustments */
+@media (max-width: 900px) {
+  .replay-layout-container {
+    /* Changes to column ONLY below 900px */
     flex-direction: column;
-    padding: 20px; /* Add padding around the content */
+    align-items: center;
   }
-  
-  .replay-page-container h1 {
-    margin-bottom: 20px; /* Space below title */
+
+  .replay-sidebar {
+    flex-basis: auto; /* Let width be determined by content */
+    width: 100%; /* Take full width when stacked */
+    order: 3; /* Move sidebars below content */
+    margin-top: 1em;
   }
-  
-  /* Ensure components stack vertically */
-  .replay-page-container > div {
-    width: 100%; /* Make components take full width */
+
+  .replay-sidebar-left {
+     order: 3; /* Ensure left is below center */
   }
-  
-  /* You might want to constrain the width on larger screens */
-  @media (min-width: 992px) {
-    .replay-page-container {
-      max-width: 960px; /* Example max width */
-      margin: 0 auto; /* Center on large screens */
-    }
+
+  .replay-sidebar-right {
+     order: 4; /* Ensure right is last */
   }
+
+  .replay-center-content {
+    order: 2; /* Content comes first */
+    width: 100%; /* Take full width */
+  }
+}

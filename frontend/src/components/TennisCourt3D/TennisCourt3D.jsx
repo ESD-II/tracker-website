@@ -4,7 +4,8 @@ import { Canvas } from '@react-three/fiber';
 // Ensure Line and Cylinder are imported from drei
 import { OrbitControls, Plane, Sphere, Line, Cylinder } from '@react-three/drei';
 import * as THREE from 'three';
-import Scoreboard from '../Scoreboard/Scoreboard';
+// --- REMOVED SCOREBOARD IMPORT ---
+// import Scoreboard from '../Scoreboard/Scoreboard';
 
 // --- Constants ---
 const COURT_LENGTH = 23.77;
@@ -13,7 +14,6 @@ const NET_HEIGHT = 0.914;
 const SERVICE_LINE_FROM_NET = 6.4;
 const BASELINE_FROM_NET = COURT_LENGTH / 2;
 const TRAJECTORY_MAX_POINTS = 150;
-// LINE_WIDTH constant might still be useful for base plane sizing, but not for <Line> thickness
 const LINE_WIDTH = 0.05;
 const POLE_HEIGHT = 1.07;
 const POLE_RADIUS = 0.03;
@@ -39,41 +39,29 @@ const mapCoords = (simX, simY, simZ) => {
 // *** TennisCourtLines using <Line> component ***
 function TennisCourtLines() {
     const lineColor = '#FFFFFF'; // White
-    const lineThickness = 2; // Thickness for <Line> component (adjust as needed)
-    // Lift lines just slightly above the court surface to avoid z-fighting with court base
-    const lineY = 0.01; // Small offset from the base plane
+    const lineThickness = 2;
+    const lineY = 0.01;
 
-    // Define vertices for lines (Mapped Coordinates: X=Width, Y=Height, Z=Length)
     const halfWidth = COURT_WIDTH_SINGLES / 2;
-    const halfLength = BASELINE_FROM_NET; // Same as COURT_LENGTH / 2
-    const serviceLineZ = SERVICE_LINE_FROM_NET; // Distance from net (Z=0)
+    const halfLength = BASELINE_FROM_NET;
+    const serviceLineZ = SERVICE_LINE_FROM_NET;
 
-    // Define line segments using pairs of [x, y, z] coordinates
     const lines = [
-        // Baselines
         [ [-halfWidth, lineY, halfLength], [halfWidth, lineY, halfLength] ], // Back baseline
         [ [-halfWidth, lineY, -halfLength], [halfWidth, lineY, -halfLength] ], // Front baseline
-        // Sidelines
         [ [-halfWidth, lineY, -halfLength], [-halfWidth, lineY, halfLength] ], // Left sideline
         [ [halfWidth, lineY, -halfLength], [halfWidth, lineY, halfLength] ],   // Right sideline
-        // Service Lines
         [ [-halfWidth, lineY, serviceLineZ], [halfWidth, lineY, serviceLineZ] ], // Back service line
         [ [-halfWidth, lineY, -serviceLineZ], [halfWidth, lineY, -serviceLineZ] ],// Front service line
-        // Center Service Line
-        [ [0, lineY, -serviceLineZ], [0, lineY, serviceLineZ] ],
+        [ [0, lineY, -serviceLineZ], [0, lineY, serviceLineZ] ], // Center Service Line
     ];
 
-    console.log("Rendering TennisCourtLines using <Line>"); // <<< DEBUG LOG
+    // console.log("Rendering TennisCourtLines using <Line>"); // Optional debug
 
     return (
         <group>
             {lines.map((points, index) => (
-                <Line
-                    key={index}
-                    points={points}       // Pass the array of two [x, y, z] arrays
-                    color={lineColor}
-                    lineWidth={lineThickness}
-                />
+                <Line key={index} points={points} color={lineColor} lineWidth={lineThickness} />
             ))}
         </group>
     );
@@ -81,34 +69,29 @@ function TennisCourtLines() {
 
 // *** TennisCourt component using the new TennisCourtLines ***
 function TennisCourt() {
-    const courtColor = '#4A9A4A'; // Greenish court
-    const netColor = '#111111';   // Darker net
-    const poleColor = '#444444';  // Dark grey poles
+    const courtColor = '#4A9A4A';
+    const netColor = '#111111';
+    const poleColor = '#444444';
 
-    console.log("Rendering TennisCourt"); // <<< DEBUG LOG
+    // console.log("Rendering TennisCourt"); // Optional debug
 
     return (
         <group>
-            {/* Court Base - Use standard material for lighting effects */}
-            {/* Make base slightly larger than lines defined by COURT_WIDTH/LENGTH */}
+            {/* Court Base */}
             <Plane args={[COURT_WIDTH_SINGLES + LINE_WIDTH, COURT_LENGTH + LINE_WIDTH]} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
                 <meshStandardMaterial color={courtColor} />
             </Plane>
-
-            {/* Court Lines (using the new <Line> based component) */}
+            {/* Court Lines */}
             <TennisCourtLines />
-
             {/* Net */}
             <Plane args={[COURT_WIDTH_SINGLES, NET_HEIGHT]} rotation={[0, 0, 0]} position={[0, NET_HEIGHT / 2, 0]}>
                 <meshStandardMaterial color={netColor} side={THREE.DoubleSide} transparent opacity={0.7} roughness={0.8}/>
             </Plane>
-            {/* Net Top Cord - Use Cylinder */}
+            {/* Net Top Cord */}
              <Cylinder args={[0.01, 0.01, COURT_WIDTH_SINGLES, 8]} position={[0, NET_HEIGHT, 0]} rotation={[0, 0, Math.PI / 2]}>
                 <meshStandardMaterial color="#FFFFFF" />
             </Cylinder>
-
-            {/* Net Poles - Use Cylinder */}
-            {/* Position poles slightly outside the singles width */}
+            {/* Net Poles */}
             <Cylinder args={[POLE_RADIUS, POLE_RADIUS, POLE_HEIGHT, 12]} position={[COURT_WIDTH_SINGLES / 2 + POLE_RADIUS*2, POLE_HEIGHT / 2, 0]}>
                  <meshStandardMaterial color={poleColor} />
             </Cylinder>
@@ -151,7 +134,8 @@ function TennisCourt3D({ isReplayActive, replayPointId }) {
     const [trajectoryPoints, setTrajectoryPoints] = useState([]);
     const [replayCoords, setReplayCoords] = useState([]);
     const [currentReplayCoordIndex, setCurrentReplayCoordIndex] = useState(0);
-    const [replayScoreContext, setReplayScoreContext] = useState(null);
+    // --- REMOVED SCOREBOARD STATE ---
+    // const [replayScoreContext, setReplayScoreContext] = useState(null);
     const replayTimeoutRef = useRef(null);
     const isMounted = useRef(true);
 
@@ -159,7 +143,7 @@ function TennisCourt3D({ isReplayActive, replayPointId }) {
     console.log("Current ballPosition state:", ballPosition);
 
 
-    // --- Replay Data Fetching Effect --- (Keep as is)
+    // --- Replay Data Fetching Effect ---
     useEffect(() => {
         isMounted.current = true;
         console.log("Replay Fetch Effect Triggered. isReplayActive:", isReplayActive, "replayPointId:", replayPointId);
@@ -167,7 +151,8 @@ function TennisCourt3D({ isReplayActive, replayPointId }) {
         if (isReplayActive && replayPointId !== null) {
             console.log(`Fetching replay data for point ${replayPointId}`);
             setTrajectoryPoints([]);
-            setReplayScoreContext(null);
+            // --- REMOVED SCOREBOARD STATE UPDATE ---
+            // setReplayScoreContext(null);
             const apiUrl = `${API_BASE_URL}/api/tracker/points/${replayPointId}/replay/`;
             fetch(apiUrl)
                 .then(res => {
@@ -186,28 +171,28 @@ function TennisCourt3D({ isReplayActive, replayPointId }) {
                         console.log("Setting initial replay position to:", initialMappedPos);
                         setBallPosition(initialMappedPos);
                         setTrajectoryPoints([initialMappedPos]);
-                        setReplayScoreContext({
-                             team1Points: data.team1_points_at_start ?? '0',
-                             team2Points: data.team2_points_at_start ?? '0',
-                             team1Games: data.team1_games_at_start ?? 0,
-                             team2Games: data.team2_games_at_start ?? 0,
-                             currentSet: data.set_number_at_start ?? 1,
-                             serverPlayer: data.server_player ?? null,
-                         });
+                        // --- REMOVED SCOREBOARD STATE UPDATE ---
+                        // setReplayScoreContext({ ... });
                     } else {
                         console.log("No coordinates found to replay for point:", replayPointId);
-                        setReplayCoords([]); setReplayScoreContext(null);
+                        setReplayCoords([]);
+                        // --- REMOVED SCOREBOARD STATE UPDATE ---
+                        // setReplayScoreContext(null);
                      }
                 })
                 .catch(error => {
                      if (isMounted.current) {
                           console.error("Error fetching replay data:", error);
-                          setReplayCoords([]); setReplayScoreContext(null);
+                          setReplayCoords([]);
+                          // --- REMOVED SCOREBOARD STATE UPDATE ---
+                          // setReplayScoreContext(null);
                      }
                  });
         } else {
              console.log("Clearing replay state because isReplayActive is false or replayPointId is null.");
-            setReplayCoords([]); setCurrentReplayCoordIndex(0); setReplayScoreContext(null);
+            setReplayCoords([]); setCurrentReplayCoordIndex(0);
+            // --- REMOVED SCOREBOARD STATE UPDATE ---
+            // setReplayScoreContext(null);
             console.log("Resetting ball position to initial state:", initialBallPos);
             setBallPosition(initialBallPos);
             setTrajectoryPoints([]);
@@ -250,13 +235,18 @@ function TennisCourt3D({ isReplayActive, replayPointId }) {
         return () => { if (replayTimeoutRef.current) clearTimeout(replayTimeoutRef.current); };
     }, [isReplayActive, replayCoords, currentReplayCoordIndex, replayPointId]);
 
-    // --- Determine Scoreboard Props --- (Keep as is)
-    const scoreboardProps = replayScoreContext || { team1Points: '-', team2Points: '-', team1Games: '-', team2Games: '-', currentSet: '-', serverPlayer: null };
+    // --- REMOVED Scoreboard Props calculation ---
+    // const scoreboardProps = replayScoreContext || { team1Points: '-', team2Points: '-', team1Games: '-', team2Games: '-', currentSet: '-', serverPlayer: null };
 
     return (
+         // Use React Fragment as direct wrapper since Scoreboard is gone
          <>
-            <Scoreboard {...scoreboardProps} />
-            <div style={{ height: '60vh', width: '100%', background: '#ADD8E6', marginBottom: '20px' }}>
+            {/* --- REMOVED Scoreboard component --- */}
+            {/* <Scoreboard {...scoreboardProps} /> */}
+
+            {/* Render the 3D Canvas */}
+            {/* Adjusted height slightly to maybe take up more space */}
+            <div style={{ height: '70vh', width: '100%', background: '#ADD8E6', marginBottom: '20px' }}>
                 <Canvas clearColor="#ADD8E6" camera={{ position: [0, 12, COURT_LENGTH * 0.8], fov: 55 }}>
                     {/* Lighting and Controls */}
                     <ambientLight intensity={0.7} />
@@ -265,7 +255,7 @@ function TennisCourt3D({ isReplayActive, replayPointId }) {
                     <OrbitControls enablePan={true} enableZoom={true} enableRotate={true}/>
 
                     {/* Scene Components */}
-                    <TennisCourt /> {/* This will render the court base and the <Line> based lines */}
+                    <TennisCourt />
                     {replayCoords.length > 0 && <Ball position={ballPosition} />}
                     {replayCoords.length > 0 && <Trajectory points={trajectoryPoints} />}
 

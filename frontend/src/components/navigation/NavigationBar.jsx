@@ -10,8 +10,6 @@ function NavigationBar() {
         <Navbar.Toggle aria-controls="navbarSupportedContent" />
         <Navbar.Collapse id="navbarSupportedContent">
           <Nav className="me-auto">
-            <Nav.Link href="/">Home</Nav.Link>
-            <Nav.Link href="/replay">Replay</Nav.Link>
           </Nav>
 
           {/* Right side GitHub, LinkedIn, and Admin Login */}
