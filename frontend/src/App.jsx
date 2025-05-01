@@ -23,9 +23,8 @@ function App() {
         {/* Ensures main content expands */}
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Home />} />
+            <Route path="/" element={<Replay />} />
             <Route path="/about" element={<About />} />
-            <Route path="/replay" element={<Replay />} />
             {/* Catch-all route for undefined pages */}
             <Route path="*" element={<NotFound />} />
           </Routes>
