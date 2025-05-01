@@ -1,0 +1,1 @@
+print("Minimal script ran!")
