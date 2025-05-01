@@ -1,7 +1,8 @@
 // src/components/TennisCourt3D.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Plane, Sphere, Line, Cylinder } from '@react-three/drei'; // Ensure Cylinder is imported
+// Ensure Line and Cylinder are imported from drei
+import { OrbitControls, Plane, Sphere, Line, Cylinder } from '@react-three/drei';
 import * as THREE from 'three';
 import Scoreboard from '../Scoreboard/Scoreboard';
 
@@ -12,6 +13,7 @@ const NET_HEIGHT = 0.914;
 const SERVICE_LINE_FROM_NET = 6.4;
 const BASELINE_FROM_NET = COURT_LENGTH / 2;
 const TRAJECTORY_MAX_POINTS = 150;
+// LINE_WIDTH constant might still be useful for base plane sizing, but not for <Line> thickness
 const LINE_WIDTH = 0.05;
 const POLE_HEIGHT = 1.07;
 const POLE_RADIUS = 0.03;
@@ -34,52 +36,66 @@ const mapCoords = (simX, simY, simZ) => {
 
 // --- Scene Components ---
 
-// *** FULL DEFINITION for TennisCourtLines ***
+// *** TennisCourtLines using <Line> component ***
 function TennisCourtLines() {
     const lineColor = '#FFFFFF'; // White
-    // Use a MeshBasicMaterial for lines to ensure visibility regardless of light angle
-    const lineMaterial = <meshBasicMaterial color={lineColor} side={THREE.DoubleSide}/>;
-    const lineY = 0.005; // Lift lines just slightly above the court surface
+    const lineThickness = 2; // Thickness for <Line> component (adjust as needed)
+    // Lift lines just slightly above the court surface to avoid z-fighting with court base
+    const lineY = 0.01; // Small offset from the base plane
+
+    // Define vertices for lines (Mapped Coordinates: X=Width, Y=Height, Z=Length)
+    const halfWidth = COURT_WIDTH_SINGLES / 2;
+    const halfLength = BASELINE_FROM_NET; // Same as COURT_LENGTH / 2
+    const serviceLineZ = SERVICE_LINE_FROM_NET; // Distance from net (Z=0)
+
+    // Define line segments using pairs of [x, y, z] coordinates
+    const lines = [
+        // Baselines
+        [ [-halfWidth, lineY, halfLength], [halfWidth, lineY, halfLength] ], // Back baseline
+        [ [-halfWidth, lineY, -halfLength], [halfWidth, lineY, -halfLength] ], // Front baseline
+        // Sidelines
+        [ [-halfWidth, lineY, -halfLength], [-halfWidth, lineY, halfLength] ], // Left sideline
+        [ [halfWidth, lineY, -halfLength], [halfWidth, lineY, halfLength] ],   // Right sideline
+        // Service Lines
+        [ [-halfWidth, lineY, serviceLineZ], [halfWidth, lineY, serviceLineZ] ], // Back service line
+        [ [-halfWidth, lineY, -serviceLineZ], [halfWidth, lineY, -serviceLineZ] ],// Front service line
+        // Center Service Line
+        [ [0, lineY, -serviceLineZ], [0, lineY, serviceLineZ] ],
+    ];
+
+    console.log("Rendering TennisCourtLines using <Line>"); // <<< DEBUG LOG
 
     return (
-        // Position group slightly above court to avoid z-fighting
-        <group position={[0, lineY, 0]}>
-            {/* Baseline 1 */}
-            <Plane args={[COURT_WIDTH_SINGLES, LINE_WIDTH]} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, BASELINE_FROM_NET]} material={lineMaterial} />
-            {/* Baseline 2 */}
-            <Plane args={[COURT_WIDTH_SINGLES, LINE_WIDTH]} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, -BASELINE_FROM_NET]} material={lineMaterial} />
-            {/* Sideline 1 */}
-            <Plane args={[LINE_WIDTH, COURT_LENGTH]} rotation={[-Math.PI / 2, 0, 0]} position={[COURT_WIDTH_SINGLES / 2, 0, 0]} material={lineMaterial} />
-            {/* Sideline 2 */}
-            <Plane args={[LINE_WIDTH, COURT_LENGTH]} rotation={[-Math.PI / 2, 0, 0]} position={[-COURT_WIDTH_SINGLES / 2, 0, 0]} material={lineMaterial} />
-            {/* Service Line 1 */}
-            <Plane args={[COURT_WIDTH_SINGLES, LINE_WIDTH]} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, SERVICE_LINE_FROM_NET]} material={lineMaterial} />
-             {/* Service Line 2 */}
-             <Plane args={[COURT_WIDTH_SINGLES, LINE_WIDTH]} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, -SERVICE_LINE_FROM_NET]} material={lineMaterial} />
-            {/* Center Service Line */}
-            <Plane args={[LINE_WIDTH, SERVICE_LINE_FROM_NET * 2]} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} material={lineMaterial} />
-             {/* Optional Center Mark (Baseline) - Small lines
-             <Plane args={[LINE_WIDTH, 0.1]} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, BASELINE_FROM_NET - (0.1/2)]} material={lineMaterial} />
-             <Plane args={[LINE_WIDTH, 0.1]} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, -BASELINE_FROM_NET + (0.1/2)]} material={lineMaterial} />
-             */}
+        <group>
+            {lines.map((points, index) => (
+                <Line
+                    key={index}
+                    points={points}       // Pass the array of two [x, y, z] arrays
+                    color={lineColor}
+                    lineWidth={lineThickness}
+                />
+            ))}
         </group>
     );
 }
 
-// *** FULL DEFINITION for TennisCourt ***
+// *** TennisCourt component using the new TennisCourtLines ***
 function TennisCourt() {
     const courtColor = '#4A9A4A'; // Greenish court
     const netColor = '#111111';   // Darker net
     const poleColor = '#444444';  // Dark grey poles
 
+    console.log("Rendering TennisCourt"); // <<< DEBUG LOG
+
     return (
         <group>
             {/* Court Base - Use standard material for lighting effects */}
+            {/* Make base slightly larger than lines defined by COURT_WIDTH/LENGTH */}
             <Plane args={[COURT_WIDTH_SINGLES + LINE_WIDTH, COURT_LENGTH + LINE_WIDTH]} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
                 <meshStandardMaterial color={courtColor} />
             </Plane>
 
-            {/* Court Lines */}
+            {/* Court Lines (using the new <Line> based component) */}
             <TennisCourtLines />
 
             {/* Net */}
@@ -92,10 +108,11 @@ function TennisCourt() {
             </Cylinder>
 
             {/* Net Poles - Use Cylinder */}
-            <Cylinder args={[POLE_RADIUS, POLE_RADIUS, POLE_HEIGHT, 12]} position={[COURT_WIDTH_SINGLES / 2 + POLE_RADIUS, POLE_HEIGHT / 2, 0]}>
+            {/* Position poles slightly outside the singles width */}
+            <Cylinder args={[POLE_RADIUS, POLE_RADIUS, POLE_HEIGHT, 12]} position={[COURT_WIDTH_SINGLES / 2 + POLE_RADIUS*2, POLE_HEIGHT / 2, 0]}>
                  <meshStandardMaterial color={poleColor} />
             </Cylinder>
-             <Cylinder args={[POLE_RADIUS, POLE_RADIUS, POLE_HEIGHT, 12]} position={[-COURT_WIDTH_SINGLES / 2 - POLE_RADIUS, POLE_HEIGHT / 2, 0]}>
+             <Cylinder args={[POLE_RADIUS, POLE_RADIUS, POLE_HEIGHT, 12]} position={[-COURT_WIDTH_SINGLES / 2 - POLE_RADIUS*2, POLE_HEIGHT / 2, 0]}>
                  <meshStandardMaterial color={poleColor} />
             </Cylinder>
         </group>
@@ -103,31 +120,27 @@ function TennisCourt() {
 }
 
 
-// *** BALL COMPONENT - Reverted Debugging Changes ***
+// *** BALL COMPONENT ***
 function Ball({ position }) {
-    console.log("Ball Component Rendered with position:", position); // Keep log for now
+    console.log("Ball Component Rendered with position:", position);
     if (!position || !(position instanceof THREE.Vector3) || isNaN(position.x) || isNaN(position.y) || isNaN(position.z) ) {
        console.warn("Invalid position prop passed to Ball component:", position);
        return null;
     }
-    // Standard tennis ball size is ~6.7cm diameter -> radius ~0.0335m
     return (
         <Sphere args={[0.035, 16, 16]} position={position}>
-            {/* Standard tennis ball yellow/green */}
             <meshStandardMaterial color="#ccff00" roughness={0.6} metalness={0.1} />
         </Sphere>
     );
 }
 
-// *** TRAJECTORY COMPONENT - Reverted Debugging Changes ***
+// *** TRAJECTORY COMPONENT ***
 function Trajectory({ points }) {
-     console.log(`Trajectory Component Rendered with ${points?.length || 0} points.`); // Keep log for now
+     console.log(`Trajectory Component Rendered with ${points?.length || 0} points.`);
     if (!points || points.length < 2) return null;
-    // Filter points just in case
     const validPoints = points.filter(p => p instanceof THREE.Vector3 && !isNaN(p.x) && !isNaN(p.y) && !isNaN(p.z));
      if (validPoints.length < 2) return null;
-    // Standard line width
-    return <Line points={validPoints} color="#FFA500" lineWidth={2} />; // Orange color
+    return <Line points={validPoints} color="#FFA500" lineWidth={2} />;
 }
 
 
@@ -173,7 +186,6 @@ function TennisCourt3D({ isReplayActive, replayPointId }) {
                         console.log("Setting initial replay position to:", initialMappedPos);
                         setBallPosition(initialMappedPos);
                         setTrajectoryPoints([initialMappedPos]);
-                        // Ensure your serializer includes these fields with these names or adjust here
                         setReplayScoreContext({
                              team1Points: data.team1_points_at_start ?? '0',
                              team2Points: data.team2_points_at_start ?? '0',
@@ -245,17 +257,15 @@ function TennisCourt3D({ isReplayActive, replayPointId }) {
          <>
             <Scoreboard {...scoreboardProps} />
             <div style={{ height: '60vh', width: '100%', background: '#ADD8E6', marginBottom: '20px' }}>
-                {/* Set clearColor on Canvas for explicit background control */}
                 <Canvas clearColor="#ADD8E6" camera={{ position: [0, 12, COURT_LENGTH * 0.8], fov: 55 }}>
                     {/* Lighting and Controls */}
                     <ambientLight intensity={0.7} />
-                    {/* Make directional lights brighter */}
                     <directionalLight position={[5, 15, 10]} intensity={1.0} castShadow />
                     <directionalLight position={[-5, 10, -10]} intensity={0.6} />
                     <OrbitControls enablePan={true} enableZoom={true} enableRotate={true}/>
 
-                    {/* Scene Components - Now using full definitions */}
-                    <TennisCourt />
+                    {/* Scene Components */}
+                    <TennisCourt /> {/* This will render the court base and the <Line> based lines */}
                     {replayCoords.length > 0 && <Ball position={ballPosition} />}
                     {replayCoords.length > 0 && <Trajectory points={trajectoryPoints} />}
 
