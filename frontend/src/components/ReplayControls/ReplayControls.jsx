@@ -1,4 +1,6 @@
 // src/components/ReplayControls.jsx
+// This component ALREADY only uses HTTP API calls, no WebSockets/Channels involved.
+
 import React, { useState, useEffect } from 'react';
 import './ReplayControls.css'; // Optional: for styling
 
@@ -19,14 +21,12 @@ function ReplayControls({ onStartReplay, onStopReplay, isPlayingReplay, currentR
         const apiUrl = `${API_BASE_URL}/api/tracker/points/`; // Fetch first page
         console.log(`Fetching points list from: ${apiUrl}`)
 
-        fetch(apiUrl)
+        fetch(apiUrl) // Uses standard HTTP fetch
             .then(res => {
                 if (!res.ok) {
-                    // Provide more specific error message for gateway timeout
                     if (res.status === 504) {
                          throw new Error(`Failed to fetch points: Gateway Timeout (Status: ${res.status}). The backend server took too long to respond.`);
                     }
-                     // Try to get more info from the response body for other errors
                     return res.text().then(text => {
                        throw new Error(`Failed to fetch points (Status: ${res.status}), Body: ${text}`);
                     });
@@ -34,52 +34,31 @@ function ReplayControls({ onStartReplay, onStopReplay, isPlayingReplay, currentR
                 return res.json();
             })
             .then(data => {
-                // *** THIS IS THE KEY CHANGE ***
-                // Access the 'results' array from the paginated response object
-                setAvailablePoints(data.results || []); // Use data.results, fallback to empty array
-
-                // Optional: Store pagination links if you want to implement Load More later
+                // Assumes DRF pagination structure (adjust if not using pagination)
+                setAvailablePoints(data.results || data || []); // Use data.results or data itself, fallback to empty array
                 // setNextPageUrl(data.next);
                 // setPrevPageUrl(data.previous);
-
                 setIsLoading(false);
             })
             .catch(err => {
                 console.error("Error fetching points:", err);
-                setError(err.message); // Display the specific error message
+                setError(err.message);
                 setIsLoading(false);
             });
     }, []); // Empty dependency array = run once on mount
 
     // Optional function to load more points (example)
-    // const loadMorePoints = (url) => {
-    //     if (!url) return;
-    //     setIsLoading(true);
-    //     fetch(url)
-    //         .then(res => res.ok ? res.json() : Promise.reject('Failed to fetch next page'))
-    //         .then(data => {
-    //             setAvailablePoints(prevPoints => [...prevPoints, ...(data.results || [])]); // Append results
-    //             setNextPageUrl(data.next);
-    //             setPrevPageUrl(data.previous);
-    //             setIsLoading(false);
-    //         })
-    //         .catch(err => {
-    //             console.error("Error loading more points:", err);
-    //             setError(typeof err === 'string' ? err : 'Could not load more points.');
-    //             setIsLoading(false);
-    //         });
-    // };
+    // const loadMorePoints = (url) => { ... };
 
     return (
         <div className="replay-controls">
             <h3>Recorded Points</h3>
-            {isLoading && <p>Loading...</p>} {/* Simplified loading message */}
-            {error && <p className="error-message">Error: {error}</p>} {/* Display specific error */}
+            {isLoading && <p>Loading...</p>}
+            {error && <p className="error-message">Error: {error}</p>}
             {!isLoading && !error && availablePoints.length === 0 && <p>No points recorded yet.</p>}
 
             {!isLoading && !error && availablePoints.length > 0 && (
                 <ul>
-                    {/* Now mapping over the first page of results */}
                     {availablePoints.map(point => (
                         <li key={point.id} className={currentReplayPointId === point.id ? 'active' : ''}>
                             <span>

@@ -1,353 +1,280 @@
 // src/components/TennisCourt3D.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Plane, Sphere, Line, Text } from '@react-three/drei';
+// Ensure Line and Cylinder are imported from drei
+import { OrbitControls, Plane, Sphere, Line, Cylinder } from '@react-three/drei';
 import * as THREE from 'three';
+import Scoreboard from '../Scoreboard/Scoreboard';
 
 // --- Constants ---
 const COURT_LENGTH = 23.77;
 const COURT_WIDTH_SINGLES = 8.23;
-const COURT_WIDTH_DOUBLES = 10.97; // For reference if needed
 const NET_HEIGHT = 0.914;
 const SERVICE_LINE_FROM_NET = 6.4;
 const BASELINE_FROM_NET = COURT_LENGTH / 2;
-const TRAJECTORY_MAX_POINTS = 150; // Max points in the trajectory line
-const LINE_WIDTH = 0.05; // Thickness of court lines
+const TRAJECTORY_MAX_POINTS = 150;
+// LINE_WIDTH constant might still be useful for base plane sizing, but not for <Line> thickness
+const LINE_WIDTH = 0.05;
 const POLE_HEIGHT = 1.07;
 const POLE_RADIUS = 0.03;
 
 // --- Environment URLs ---
-// Use || for fallback during development if .env isn't set up yet
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-// *** Use the VITE_WS_BASE_URL variable for WebSockets ***
-const WS_BASE_URL = import.meta.env.VITE_WS_BASE_URL || 'ws://localhost:8000';
-
 
 // --- Coordinate System Mapping ---
 const mapCoords = (simX, simY, simZ) => {
-    if (simX === undefined || simY === undefined || simZ === undefined) {
-        console.warn("mapCoords received undefined input");
-        return new THREE.Vector3(0, 0.1, 0); // Default safe position
+    console.log(`mapCoords Input: simX=${simX}, simY=${simY}, simZ=${simZ}`);
+    if (simX === undefined || simY === undefined || simZ === undefined || isNaN(simX) || isNaN(simY) || isNaN(simZ)) {
+        console.warn("mapCoords received invalid input, returning default.");
+        return new THREE.Vector3(0, 0.1, 0);
     }
-    // Make sure Z (height) isn't negative if needed for visuals
-    const safeZ = Math.max(simZ, 0);
-    return new THREE.Vector3(simY, safeZ, simX);
+    const safeZ = Math.max(simZ, 0.01); // Ensure minimum height
+    const mappedPos = new THREE.Vector3(simY, safeZ, simX);
+    console.log(`mapCoords Output: x=${mappedPos.x.toFixed(2)}, y=${mappedPos.y.toFixed(2)}, z=${mappedPos.z.toFixed(2)}`);
+    return mappedPos;
 };
 
 // --- Scene Components ---
 
+// *** TennisCourtLines using <Line> component ***
 function TennisCourtLines() {
     const lineColor = '#FFFFFF'; // White
-    const lineMaterial = <meshStandardMaterial color={lineColor} />;
-    const lineY = 0.01; // Slightly above court surface
+    const lineThickness = 2; // Thickness for <Line> component (adjust as needed)
+    // Lift lines just slightly above the court surface to avoid z-fighting with court base
+    const lineY = 0.01; // Small offset from the base plane
+
+    // Define vertices for lines (Mapped Coordinates: X=Width, Y=Height, Z=Length)
+    const halfWidth = COURT_WIDTH_SINGLES / 2;
+    const halfLength = BASELINE_FROM_NET; // Same as COURT_LENGTH / 2
+    const serviceLineZ = SERVICE_LINE_FROM_NET; // Distance from net (Z=0)
+
+    // Define line segments using pairs of [x, y, z] coordinates
+    const lines = [
+        // Baselines
+        [ [-halfWidth, lineY, halfLength], [halfWidth, lineY, halfLength] ], // Back baseline
+        [ [-halfWidth, lineY, -halfLength], [halfWidth, lineY, -halfLength] ], // Front baseline
+        // Sidelines
+        [ [-halfWidth, lineY, -halfLength], [-halfWidth, lineY, halfLength] ], // Left sideline
+        [ [halfWidth, lineY, -halfLength], [halfWidth, lineY, halfLength] ],   // Right sideline
+        // Service Lines
+        [ [-halfWidth, lineY, serviceLineZ], [halfWidth, lineY, serviceLineZ] ], // Back service line
+        [ [-halfWidth, lineY, -serviceLineZ], [halfWidth, lineY, -serviceLineZ] ],// Front service line
+        // Center Service Line
+        [ [0, lineY, -serviceLineZ], [0, lineY, serviceLineZ] ],
+    ];
+
+    console.log("Rendering TennisCourtLines using <Line>"); // <<< DEBUG LOG
 
     return (
         <group>
-            {/* Baseline 1 */}
-            <Plane args={[COURT_WIDTH_SINGLES, LINE_WIDTH]} rotation={[-Math.PI / 2, 0, 0]} position={[0, lineY, BASELINE_FROM_NET]} material={lineMaterial} />
-            {/* Baseline 2 */}
-            <Plane args={[COURT_WIDTH_SINGLES, LINE_WIDTH]} rotation={[-Math.PI / 2, 0, 0]} position={[0, lineY, -BASELINE_FROM_NET]} material={lineMaterial} />
-            {/* Sideline 1 */}
-            <Plane args={[LINE_WIDTH, COURT_LENGTH]} rotation={[-Math.PI / 2, 0, 0]} position={[COURT_WIDTH_SINGLES / 2, lineY, 0]} material={lineMaterial} />
-            {/* Sideline 2 */}
-            <Plane args={[LINE_WIDTH, COURT_LENGTH]} rotation={[-Math.PI / 2, 0, 0]} position={[-COURT_WIDTH_SINGLES / 2, lineY, 0]} material={lineMaterial} />
-            {/* Service Line 1 */}
-            <Plane args={[COURT_WIDTH_SINGLES, LINE_WIDTH]} rotation={[-Math.PI / 2, 0, 0]} position={[0, lineY, SERVICE_LINE_FROM_NET]} material={lineMaterial} />
-             {/* Service Line 2 */}
-             <Plane args={[COURT_WIDTH_SINGLES, LINE_WIDTH]} rotation={[-Math.PI / 2, 0, 0]} position={[0, lineY, -SERVICE_LINE_FROM_NET]} material={lineMaterial} />
-            {/* Center Service Line */}
-            <Plane args={[LINE_WIDTH, SERVICE_LINE_FROM_NET * 2]} rotation={[-Math.PI / 2, 0, 0]} position={[0, lineY, 0]} material={lineMaterial} />
-             {/* Net Line (under the net visually) */}
-             <Plane args={[COURT_WIDTH_SINGLES, LINE_WIDTH]} rotation={[-Math.PI / 2, 0, 0]} position={[0, lineY, 0]} material={lineMaterial} />
+            {lines.map((points, index) => (
+                <Line
+                    key={index}
+                    points={points}       // Pass the array of two [x, y, z] arrays
+                    color={lineColor}
+                    lineWidth={lineThickness}
+                />
+            ))}
         </group>
     );
 }
 
+// *** TennisCourt component using the new TennisCourtLines ***
 function TennisCourt() {
-    const courtColor = '#4A9A4A'; // Greenish
-    const netColor = '#222222';
-    const poleColor = '#555555';
+    const courtColor = '#4A9A4A'; // Greenish court
+    const netColor = '#111111';   // Darker net
+    const poleColor = '#444444';  // Dark grey poles
+
+    console.log("Rendering TennisCourt"); // <<< DEBUG LOG
 
     return (
         <group>
-            {/* Court Base */}
-            <Plane args={[COURT_WIDTH_SINGLES, COURT_LENGTH]} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
+            {/* Court Base - Use standard material for lighting effects */}
+            {/* Make base slightly larger than lines defined by COURT_WIDTH/LENGTH */}
+            <Plane args={[COURT_WIDTH_SINGLES + LINE_WIDTH, COURT_LENGTH + LINE_WIDTH]} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
                 <meshStandardMaterial color={courtColor} />
             </Plane>
 
-            {/* Court Lines */}
-            <TennisCourtLines /> {/* Uses the component defined above */}
+            {/* Court Lines (using the new <Line> based component) */}
+            <TennisCourtLines />
 
             {/* Net */}
             <Plane args={[COURT_WIDTH_SINGLES, NET_HEIGHT]} rotation={[0, 0, 0]} position={[0, NET_HEIGHT / 2, 0]}>
-                <meshStandardMaterial color={netColor} side={THREE.DoubleSide} transparent opacity={0.6} />
+                <meshStandardMaterial color={netColor} side={THREE.DoubleSide} transparent opacity={0.7} roughness={0.8}/>
             </Plane>
-            {/* Net Top Cord */}
-            <mesh position={[0, NET_HEIGHT, 0]}>
-                <cylinderGeometry args={[0.01, 0.01, COURT_WIDTH_SINGLES, 8]} />
+            {/* Net Top Cord - Use Cylinder */}
+             <Cylinder args={[0.01, 0.01, COURT_WIDTH_SINGLES, 8]} position={[0, NET_HEIGHT, 0]} rotation={[0, 0, Math.PI / 2]}>
                 <meshStandardMaterial color="#FFFFFF" />
-            </mesh>
+            </Cylinder>
 
-            {/* Net Poles (simple cylinders) */}
-            <mesh position={[COURT_WIDTH_SINGLES / 2 + 0.1, POLE_HEIGHT / 2, 0]}>
-                 <cylinderGeometry args={[POLE_RADIUS, POLE_RADIUS, POLE_HEIGHT, 12]} />
+            {/* Net Poles - Use Cylinder */}
+            {/* Position poles slightly outside the singles width */}
+            <Cylinder args={[POLE_RADIUS, POLE_RADIUS, POLE_HEIGHT, 12]} position={[COURT_WIDTH_SINGLES / 2 + POLE_RADIUS*2, POLE_HEIGHT / 2, 0]}>
                  <meshStandardMaterial color={poleColor} />
-            </mesh>
-             <mesh position={[-COURT_WIDTH_SINGLES / 2 - 0.1, POLE_HEIGHT / 2, 0]}>
-                 <cylinderGeometry args={[POLE_RADIUS, POLE_RADIUS, POLE_HEIGHT, 12]} />
+            </Cylinder>
+             <Cylinder args={[POLE_RADIUS, POLE_RADIUS, POLE_HEIGHT, 12]} position={[-COURT_WIDTH_SINGLES / 2 - POLE_RADIUS*2, POLE_HEIGHT / 2, 0]}>
                  <meshStandardMaterial color={poleColor} />
-            </mesh>
+            </Cylinder>
         </group>
     );
 }
 
+
+// *** BALL COMPONENT ***
 function Ball({ position }) {
-    // Ensure position is valid before rendering
-    if (!position || !(position instanceof THREE.Vector3)) {
-       console.warn("Invalid ball position passed to Ball component");
-       return null; // Don't render if position is invalid
+    console.log("Ball Component Rendered with position:", position);
+    if (!position || !(position instanceof THREE.Vector3) || isNaN(position.x) || isNaN(position.y) || isNaN(position.z) ) {
+       console.warn("Invalid position prop passed to Ball component:", position);
+       return null;
     }
     return (
-        <Sphere args={[0.065, 16, 16]} position={position}>
-            <meshStandardMaterial color="yellow" />
+        <Sphere args={[0.035, 16, 16]} position={position}>
+            <meshStandardMaterial color="#ccff00" roughness={0.6} metalness={0.1} />
         </Sphere>
     );
 }
 
+// *** TRAJECTORY COMPONENT ***
 function Trajectory({ points }) {
-    if (!points || points.length < 2) {
-        return null;
-    }
-    // Ensure points are valid THREE.Vector3 instances if needed
-    const validPoints = points.filter(p => p instanceof THREE.Vector3);
+     console.log(`Trajectory Component Rendered with ${points?.length || 0} points.`);
+    if (!points || points.length < 2) return null;
+    const validPoints = points.filter(p => p instanceof THREE.Vector3 && !isNaN(p.x) && !isNaN(p.y) && !isNaN(p.z));
      if (validPoints.length < 2) return null;
-    return <Line points={validPoints} color="orange" lineWidth={2} />;
+    return <Line points={validPoints} color="#FFA500" lineWidth={2} />;
 }
 
+
 // --- Main Component ---
-// Renamed props for clarity
 function TennisCourt3D({ isReplayActive, replayPointId }) {
-    const [ballPosition, setBallPosition] = useState(mapCoords(0, 0, 0.1));
+    const initialBallPos = mapCoords(0, 0, 0.1);
+    const [ballPosition, setBallPosition] = useState(initialBallPos);
     const [trajectoryPoints, setTrajectoryPoints] = useState([]);
     const [replayCoords, setReplayCoords] = useState([]);
     const [currentReplayCoordIndex, setCurrentReplayCoordIndex] = useState(0);
-    const ws = useRef(null);
+    const [replayScoreContext, setReplayScoreContext] = useState(null);
     const replayTimeoutRef = useRef(null);
-    const isMounted = useRef(true); // Track component mount state
+    const isMounted = useRef(true);
 
-    // --- WebSocket Connection Effect ---
+    console.log("TennisCourt3D Render. isReplayActive:", isReplayActive, "replayPointId:", replayPointId);
+    console.log("Current ballPosition state:", ballPosition);
+
+
+    // --- Replay Data Fetching Effect --- (Keep as is)
     useEffect(() => {
-        // Set mount status
         isMounted.current = true;
+        console.log("Replay Fetch Effect Triggered. isReplayActive:", isReplayActive, "replayPointId:", replayPointId);
 
-        // *** Construct WebSocket URL from environment variable ***
-        const wsUrl = `${WS_BASE_URL}/ws/tracker/`;
-        console.log(`Connecting WebSocket to ${wsUrl}`);
-
-        // Avoid creating multiple connections if one is already open/connecting
-        // Close existing cleanly before creating a new one
-        if (ws.current) {
-             console.log(`Closing existing WebSocket (State: ${ws.current.readyState}) before reconnecting.`);
-             ws.current.close(1000, "Component re-initializing"); // Close cleanly
-        }
-
-        // Don't try to connect if we are currently replaying
-        if (isReplayActive) {
-             console.log("Replay active, skipping WebSocket connection setup.");
-             return; // Exit effect early
-        }
-
-
-        // Create new WebSocket connection
-        ws.current = new WebSocket(wsUrl);
-
-        ws.current.onopen = () => {
-            if (!isMounted.current) return; // Check if component unmounted before open fires
-            console.log("WebSocket Connected to", wsUrl);
-        };
-        ws.current.onclose = (event) => {
-            // Don't log if closed intentionally by cleanup
-            if (event.code !== 1000) {
-                 console.log("WebSocket Disconnected:", event.reason, "Code:", event.code);
-            }
-        };
-        ws.current.onerror = (error) => {
-            console.error("WebSocket Error:", error);
-        };
-
-        ws.current.onmessage = (event) => {
-             // Check mount status and if replay is active inside the handler too
-            if (isReplayActive || !isMounted.current) return;
-
-            try {
-                const message = JSON.parse(event.data);
-                if (message.type === 'coords' && message.payload) {
-                    const { x, y, z } = message.payload;
-                    const newPosition = mapCoords(x, y, z);
-                    // Check mount status before state updates
-                    if (isMounted.current) {
-                         setBallPosition(newPosition);
-                         setTrajectoryPoints(prevPoints => {
-                             const updatedPoints = [...prevPoints, newPosition];
-                             return updatedPoints.length > TRAJECTORY_MAX_POINTS
-                                 ? updatedPoints.slice(updatedPoints.length - TRAJECTORY_MAX_POINTS)
-                                 : updatedPoints;
-                         });
-                    }
-                } else if (message.type === 'out_signal' || message.type === 'clock_stop') {
-                    // Clear trajectory on point end signals
-                    if (isMounted.current) {
-                         setTrajectoryPoints([]);
-                    }
-                }
-                // Add handling for other message types if needed
-            } catch (error) {
-                console.error("Failed to parse WebSocket message:", event.data, error);
-            }
-        };
-
-        // --- Cleanup function ---
-        return () => {
-            isMounted.current = false; // Mark as unmounted
-            if (replayTimeoutRef.current) {
-                clearTimeout(replayTimeoutRef.current); // Clear any pending replay timeouts
-            }
-            if (ws.current) {
-                console.log("Closing WebSocket connection on component unmount/effect cleanup.");
-                // Don't set onclose/onerror to null here, just close
-                ws.current.close(1000, "Component unmounting"); // 1000 is normal closure
-                ws.current = null; // Help garbage collection
-            }
-        };
-    // Re-run this effect if the replay state changes (to connect/disconnect WebSocket)
-    }, [isReplayActive]); // Dependency array includes isReplayActive
-
-
-    // --- Replay Data Fetching Effect ---
-    useEffect(() => {
         if (isReplayActive && replayPointId !== null) {
-             if (!isMounted.current) return; // Check mount status
             console.log(`Fetching replay data for point ${replayPointId}`);
-            setTrajectoryPoints([]); // Clear live trajectory for replay
+            setTrajectoryPoints([]);
+            setReplayScoreContext(null);
             const apiUrl = `${API_BASE_URL}/api/tracker/points/${replayPointId}/replay/`;
-            console.log(`Fetching replay from: ${apiUrl}`)
-
             fetch(apiUrl)
                 .then(res => {
-                    if (!res.ok) {
-                        return res.text().then(text => {
-                           throw new Error(`HTTP error fetching replay! Status: ${res.status}, Body: ${text}`);
-                        });
-                    }
+                    if (!res.ok) { return res.text().then(text => { throw new Error(`HTTP error fetching replay! Status: ${res.status}, Body: ${text}`); }); }
                     return res.json();
                 })
                 .then(data => {
-                     if (!isMounted.current) return; // Check mount status again after async fetch
+                     console.log("Replay data fetched:", data);
+                     if (!isMounted.current) return;
                      if (data.coordinates && data.coordinates.length > 0) {
+                        console.log(`First coordinate raw: x=${data.coordinates[0].x}, y=${data.coordinates[0].y}, z=${data.coordinates[0].z}`);
                         setReplayCoords(data.coordinates);
-                        setCurrentReplayCoordIndex(0); // Start from the beginning
-                        // Set initial position for the replay
+                        setCurrentReplayCoordIndex(0);
                         const firstCoord = data.coordinates[0];
-                        setBallPosition(mapCoords(firstCoord.x, firstCoord.y, firstCoord.z));
-                        // Start trajectory with the first point
-                        setTrajectoryPoints([mapCoords(firstCoord.x, firstCoord.y, firstCoord.z)]);
+                        const initialMappedPos = mapCoords(firstCoord.x, firstCoord.y, firstCoord.z);
+                        console.log("Setting initial replay position to:", initialMappedPos);
+                        setBallPosition(initialMappedPos);
+                        setTrajectoryPoints([initialMappedPos]);
+                        setReplayScoreContext({
+                             team1Points: data.team1_points_at_start ?? '0',
+                             team2Points: data.team2_points_at_start ?? '0',
+                             team1Games: data.team1_games_at_start ?? 0,
+                             team2Games: data.team2_games_at_start ?? 0,
+                             currentSet: data.set_number_at_start ?? 1,
+                             serverPlayer: data.server_player ?? null,
+                         });
                     } else {
                         console.log("No coordinates found to replay for point:", replayPointId);
-                        setReplayCoords([]); // Clear coords if none found
-                    }
+                        setReplayCoords([]); setReplayScoreContext(null);
+                     }
                 })
                 .catch(error => {
-                    if (isMounted.current) {
-                         console.error("Error fetching replay data:", error);
-                         setReplayCoords([]); // Clear coords on error
-                    }
-                });
-        } else if (!isReplayActive) {
-            // If replay stopped, clear replay data
-            setReplayCoords([]);
-            setCurrentReplayCoordIndex(0);
-            // Optionally clear the last replay trajectory or leave it
-             // setTrajectoryPoints([]);
+                     if (isMounted.current) {
+                          console.error("Error fetching replay data:", error);
+                          setReplayCoords([]); setReplayScoreContext(null);
+                     }
+                 });
+        } else {
+             console.log("Clearing replay state because isReplayActive is false or replayPointId is null.");
+            setReplayCoords([]); setCurrentReplayCoordIndex(0); setReplayScoreContext(null);
+            console.log("Resetting ball position to initial state:", initialBallPos);
+            setBallPosition(initialBallPos);
+            setTrajectoryPoints([]);
         }
-    }, [isReplayActive, replayPointId]); // Dependencies for fetching
+        return () => { isMounted.current = false; if (replayTimeoutRef.current) clearTimeout(replayTimeoutRef.current); };
+    }, [isReplayActive, replayPointId]);
 
 
-    // --- Replay Loop Effect ---
+    // --- Replay Loop Effect --- (Keep as is)
      useEffect(() => {
-        // Conditions to run the loop
+        console.log("Replay Loop Effect Triggered. Index:", currentReplayCoordIndex, "Total Coords:", replayCoords.length);
         if (!isReplayActive || replayCoords.length === 0 || currentReplayCoordIndex >= replayCoords.length) {
-            // If replay finished naturally (index out of bounds)
-            if (isReplayActive && replayCoords.length > 0 && currentReplayCoordIndex >= replayCoords.length) {
-                console.log("Replay loop finished for point:", replayPointId);
-                // Optionally notify parent component that replay is done, e.g., via a callback prop
-                // onStopReplay?.(); // Call parent's stop function if provided
-            }
-            return; // Don't run loop if not playing, no coords, or index out of bounds
+             if (isReplayActive && replayCoords.length > 0 && currentReplayCoordIndex >= replayCoords.length) console.log("Replay loop finished for point:", replayPointId);
+            return;
         }
-
-        // Clear previous timeout just in case
-        if (replayTimeoutRef.current) {
-             clearTimeout(replayTimeoutRef.current);
-        }
+        if (replayTimeoutRef.current) clearTimeout(replayTimeoutRef.current);
 
         const currentCoord = replayCoords[currentReplayCoordIndex];
+        console.log(`Replay Loop: Processing coord index ${currentReplayCoordIndex}:`, currentCoord);
         const nextCoord = replayCoords[currentReplayCoordIndex + 1];
-
-        // Update visualization
         const newPos = mapCoords(currentCoord.x, currentCoord.y, currentCoord.z);
-        // Check mount status before setting state
+
          if (isMounted.current) {
+             console.log(`Replay Loop: Setting ballPosition to: x=${newPos.x.toFixed(2)}, y=${newPos.y.toFixed(2)}, z=${newPos.z.toFixed(2)}`);
             setBallPosition(newPos);
-            // Add point to trajectory, prevent duplicates if delay is 0
             setTrajectoryPoints(prevPoints => {
-                 if (prevPoints.length > 0 && prevPoints[prevPoints.length - 1].equals(newPos)) {
-                     return prevPoints; // Avoid adding identical consecutive points
-                 }
+                 if (prevPoints.length > 0 && prevPoints[prevPoints.length - 1].equals(newPos)) return prevPoints;
                  const updatedPoints = [...prevPoints, newPos];
-                 // Limit trajectory length
-                 return updatedPoints.length > TRAJECTORY_MAX_POINTS
-                    ? updatedPoints.slice(updatedPoints.length - TRAJECTORY_MAX_POINTS)
-                    : updatedPoints;
+                 return updatedPoints.length > TRAJECTORY_MAX_POINTS ? updatedPoints.slice(updatedPoints.length - TRAJECTORY_MAX_POINTS) : updatedPoints;
              });
          }
 
-        // Schedule the next step
         if (nextCoord) {
             const delay = nextCoord.relative_time_ms - currentCoord.relative_time_ms;
+            console.log(`Replay Loop: Scheduling next update in ${delay}ms`);
             replayTimeoutRef.current = setTimeout(() => {
-                 // Check mount status before updating index
-                 if (isMounted.current && isReplayActive) { // Double check isReplayActive hasn't changed
-                    setCurrentReplayCoordIndex(prevIndex => prevIndex + 1);
-                 }
-            }, delay > 0 ? delay : 5); // Use a minimum delay (e.g., 5ms) if coords have same timestamp
-        } else {
-            // This was the last coordinate, the condition at the start will handle completion
-             console.log("Reached end of replay coordinates array for point:", replayPointId);
-        }
-
-        // Cleanup timeout on effect cleanup or re-run
-        return () => {
-            if (replayTimeoutRef.current) {
-                clearTimeout(replayTimeoutRef.current);
-            }
-        };
-    // Dependencies: run loop step when index changes or replay starts/coords arrive
+                 if (isMounted.current && isReplayActive) setCurrentReplayCoordIndex(prevIndex => prevIndex + 1);
+            }, delay > 0 ? delay : 5);
+        } else { console.log("Reached end of replay coordinates array for point:", replayPointId); }
+        return () => { if (replayTimeoutRef.current) clearTimeout(replayTimeoutRef.current); };
     }, [isReplayActive, replayCoords, currentReplayCoordIndex, replayPointId]);
 
+    // --- Determine Scoreboard Props --- (Keep as is)
+    const scoreboardProps = replayScoreContext || { team1Points: '-', team2Points: '-', team1Games: '-', team2Games: '-', currentSet: '-', serverPlayer: null };
 
     return (
-         <div style={{ height: '60vh', width: '100%', background: '#ADD8E6', marginBottom: '20px' }}>
-             <Canvas camera={{ position: [0, 12, COURT_LENGTH * 0.8], fov: 55 }}>
-                <ambientLight intensity={0.7} />
-                <directionalLight position={[5, 15, 10]} intensity={0.8} castShadow />
-                <directionalLight position={[-5, 10, -10]} intensity={0.4} />
-                <OrbitControls />
-                {/* Scene components */}
-                <TennisCourt />
-                <Ball position={ballPosition} />
-                <Trajectory points={trajectoryPoints} />
-            </Canvas>
-        </div>
+         <>
+            <Scoreboard {...scoreboardProps} />
+            <div style={{ height: '60vh', width: '100%', background: '#ADD8E6', marginBottom: '20px' }}>
+                <Canvas clearColor="#ADD8E6" camera={{ position: [0, 12, COURT_LENGTH * 0.8], fov: 55 }}>
+                    {/* Lighting and Controls */}
+                    <ambientLight intensity={0.7} />
+                    <directionalLight position={[5, 15, 10]} intensity={1.0} castShadow />
+                    <directionalLight position={[-5, 10, -10]} intensity={0.6} />
+                    <OrbitControls enablePan={true} enableZoom={true} enableRotate={true}/>
+
+                    {/* Scene Components */}
+                    <TennisCourt /> {/* This will render the court base and the <Line> based lines */}
+                    {replayCoords.length > 0 && <Ball position={ballPosition} />}
+                    {replayCoords.length > 0 && <Trajectory points={trajectoryPoints} />}
+
+                    {/* Optional Helpers */}
+                    {/* <gridHelper args={[30, 30]} position={[0, -0.001, 0]} /> */}
+                    {/* <axesHelper args={[5]} /> */}
+                </Canvas>
+            </div>
+         </>
     );
 }
 

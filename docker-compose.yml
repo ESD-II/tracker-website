@@ -6,8 +6,6 @@ services:
       dockerfile: Dockerfile.react
     container_name: tracker_react
     restart: always
-#    ports:
-#      - "8088:80"
     env_file:
       - .env
     volumes:
@@ -15,13 +13,14 @@ services:
       - ./frontend/node_modules:/workspace/frontend/node_modules
     networks:
       - traefik_network
-#      - internal
+      - internal
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=traefik_network"
       - "traefik.http.routers.tennis-tracker-react.rule=Host(`TennisTracker.benjaminf.net`)"
       - "traefik.http.routers.tennis-tracker-react.entrypoints=websecure"
       - "traefik.http.routers.tennis-tracker-react.tls.certresolver=myresolver"
-      - "traefik.http.services.tennis-tracker-react.loadbalancer.server.port=80" # Corrected earlier
+      - "traefik.http.services.tennis-tracker-react.loadbalancer.server.port=80"
 
   # Blender Container (unchanged)
   tracker_blender:
@@ -59,7 +58,6 @@ services:
       - ./my.cnf:/etc/mysql/my.cnf
     networks:
       - internal
-      - traefik_network
       - bridge
 
   tracker_mqtt:
@@ -76,16 +74,9 @@ services:
       - ./mqtt/log:/mosquitto/log
     networks:
       - internal
-      - traefik_network
       - bridge
 
-  tracker_redis:
-    image: redis:7-alpine
-    container_name: tracker_redis
-    restart: unless-stopped
-    networks:
-      - internal
-      - traefik_network
+  # --- REMOVED tracker_redis service ---
 
   tracker_django:
     build:
@@ -96,72 +87,26 @@ services:
     env_file:
       - .env
     volumes:
-      # Optional: Mount code for development hot-reloading (if needed)
-      # - ./backend:/app/backend
-      # Mount supervisor config if not copied in Dockerfile
       - ./backend/config:/app/backend/config
     networks:
       - internal
       - traefik_network
     depends_on:
-      - tracker_mysql
-      - tracker_redis
-#    ports:
-#      - "8001:8000"
-#    command: daphne -b 0.0.0.0 -p 8000 backend.asgi:application
+      - tracker_mysql # Only depends on MySQL now
+
     labels:
+      # Traefik labels remain the same as they point to Daphne on port 8000
       - "traefik.enable=true"
-
-      # --- Define ONE service for the Django container ---
+      # --- Explicitly tell Traefik which network to use for this service ---
+      - "traefik.docker.network=traefik_network"
       - "traefik.http.services.tennis-tracker-django.loadbalancer.server.port=8000"
-
-      # --- HTTP Router (API, Admin, Static) ---
-      # Define the router that handles HTTP traffic
       - "traefik.http.routers.tennis-tracker-django-http.rule=Host(`TennisTracker.benjaminf.net`) && (PathPrefix(`/api`) || PathPrefix(`/admin`) || PathPrefix(`/static`))"
       - "traefik.http.routers.tennis-tracker-django-http.entrypoints=websecure"
       - "traefik.http.routers.tennis-tracker-django-http.tls.certresolver=myresolver"
-      # --- Link HTTP router to the single service ---
       - "traefik.http.routers.tennis-tracker-django-http.service=tennis-tracker-django"
-
-      # --- WebSocket Router ---
-      # Define the router that handles WebSocket traffic
-      - "traefik.http.routers.tennis-tracker-django-ws.rule=Host(`TennisTracker.benjaminf.net`) && PathPrefix(`/ws`)"
       - "traefik.http.routers.tennis-tracker-django-ws.entrypoints=websecure"
       - "traefik.http.routers.tennis-tracker-django-ws.tls.certresolver=myresolver"
-      # --- Link WebSocket router to the single service ---
       - "traefik.http.routers.tennis-tracker-django-ws.service=tennis-tracker-django"
-
-  # --- NEW SERVICE: Dedicated MQTT Bridge Worker ---
-  tracker_mqtt_bridge:
-    build:
-      context: .
-      dockerfile: Dockerfile.django # Uses the same build context and Dockerfile
-    container_name: tracker_mqtt_bridge
-    restart: unless-stopped
-    env_file:
-      - .env # Needs same environment variables
-    # No volumes needed if Dockerfile copies code correctly
-    networks:
-      - internal # ONLY needs internal network to reach DB, Redis, MQTT
-    depends_on:
-      - tracker_mysql # Needs DB ready
-      - tracker_redis # Needs Redis ready for channel layer
-      - tracker_mqtt # Needs MQTT broker ready
-    # --- Override the command to run the bridge ---
-    command: >
-      sh -c "
-        echo 'Waiting for MySQL in Bridge...' &&
-        while ! nc -z tracker_mysql 3306; do sleep 1; done &&
-        echo 'MySQL ready in Bridge.' &&
-        echo 'Waiting for Redis in Bridge...' &&
-        while ! nc -z tracker_redis 6379; do sleep 1; done &&
-        echo 'Redis ready in Bridge.' &&
-        echo 'Waiting for MQTT in Bridge...' &&
-        while ! nc -z tracker_mqtt 1883; do sleep 1; done &&
-        echo 'MQTT ready in Bridge.' &&
-        echo 'Starting MQTT Bridge command...' &&
-        python manage.py run_mqtt_bridge
-      "
 
 networks:
   traefik_network:

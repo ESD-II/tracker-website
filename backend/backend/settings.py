@@ -44,7 +44,6 @@ INSTALLED_APPS = [
     "django.contrib.admin",
     "corsheaders",
     "rest_framework",
-    "channels",
     "backend",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -89,50 +88,37 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "backend.wsgi.application"
+
 # --- Ensure ASGI Application is set for Channels ---
 ASGI_APPLICATION = "backend.asgi.application"
 
-# --- Channels Layers (Ensure Redis is configured correctly for production) ---
-CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            # This correctly reads from environment variables
-            "hosts": [
-                (
-                    os.environ.get("REDIS_HOST", "localhost"),
-                    int(os.environ.get("REDIS_PORT", 6379)),
-                )
-            ],
-        },
-    },
-}
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
 # settings.py
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.mysql',
-#         'NAME': os.environ.get('DB_NAME'),
-#         'USER': os.environ.get('DB_USER'),
-#         'PASSWORD': os.environ.get('DB_PASSWORD'),
-#         'HOST': os.environ.get('DB_HOST'), # Should be 'tracker_mysql' when running in docker
-#         'PORT': os.environ.get('DB_PORT', '3306'),
-#         'OPTIONS': {
-#              'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-#          },
-#     }
-# }
-
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "tennis_data.db",
+        "ENGINE": "django.db.backends.mysql",
+        "NAME": os.environ.get("DB_NAME"),
+        "USER": os.environ.get("DB_USER"),
+        "PASSWORD": os.environ.get("DB_PASSWORD"),
+        "HOST": os.environ.get(
+            "DB_HOST"
+        ),  # Should be 'tracker_mysql' when running in docker
+        "PORT": os.environ.get("DB_PORT", "3306"),
+        "OPTIONS": {
+            "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
+        },
     }
 }
+
+# DATABASES = {
+#    "default": {
+#        "ENGINE": "django.db.backends.sqlite3",
+#        "NAME": BASE_DIR / "db.sqlite3",
+#    }
+# }
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
@@ -158,7 +144,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = "UTC"
+TIME_ZONE = "EST"
 
 USE_I18N = True
 
