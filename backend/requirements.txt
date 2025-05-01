@@ -1,7 +1,7 @@
 aioapns==2.2
 amqp==5.1.1
 anyio==3.7.0
-# asammdf==7.3.12
+asammdf==7.3.12
 asgiref==3.7.2
 async-timeout==4.0.3
 axios==0.1.0
@@ -18,7 +18,7 @@ django-filter==23.5
 djangorestframework==3.14.0
 djangorestframework-jwt==1.0.1
 python-dotenv==1.0.0
-# mysqlclient==2.2.0
+mysqlclient==2.2.0
 supervisor
 paho-mqtt==2.1.0
 daphne
