@@ -1,52 +1,113 @@
-/* src/components/Scoreboard.css */
+/* src/components/Scoreboard/Scoreboard.css */
 .scoreboard {
-    font-family: 'Arial', sans-serif;
-    background-color: #282c34; /* Dark background */
-    color: white;
-    padding: 10px 15px;
-    border-radius: 5px;
-    min-width: 200px;
-    display: inline-block; /* Or set a fixed width */
-    margin-bottom: 15px;
-    border: 1px solid #444;
-}
-
-.scoreboard-header {
-    text-align: center;
-    font-size: 0.9em;
-    color: #aaa;
-    padding-bottom: 5px;
-    margin-bottom: 5px;
-    border-bottom: 1px solid #444;
+  font-family: 'Arial', sans-serif;
+  background-color: #003366; /* Dark blue background */
+  color: white;
+  padding: 15px;
+  border-radius: 8px;
+  min-width: 400px;
+  max-width: 700px; /* Adjust as needed */
+  margin: 10px auto; /* Center scoreboard if desired */
+  border: 2px solid #cccccc;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 .scoreboard-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 5px;
-    font-size: 1.1em;
+  display: flex;
+  align-items: center; /* Vertically center items in a row */
+  border-bottom: 1px solid #444;
+  padding: 8px 0;
+}
+.scoreboard-row:last-child {
+  border-bottom: none;
+}
+
+.scoreboard-header {
+  font-weight: bold;
+  font-size: 1.1em;
+  color: #FFD700; /* Gold color for headers */
+  text-transform: uppercase;
+  padding-bottom: 10px;
+  margin-bottom: 5px;
+  border-bottom: 2px solid #FFD700;
 }
 
 .player-name {
-    flex-grow: 1; /* Takes up remaining space */
-    text-align: left;
+  flex: 1.5; /* Give more space to name */
+  text-align: left;
+  padding-left: 10px;
 }
 
-.player-name.serving {
-    font-weight: bold;
+.sets-header,
+.points-header {
+  text-align: center;
 }
 
-.games {
-    font-weight: bold;
+.sets-header {
+ flex: 3; /* Give more space to sets section */
+}
+
+.points-header {
+  flex: 1; /* Give less space to points */
+}
+
+.sets-container {
+  flex: 3; /* Match header flex */
+  display: flex;
+  justify-content: space-around; /* Distribute sets evenly */
+  text-align: center;
+}
+
+.set-score {
+  background-color: #f0f0f0;
+  color: #333;
+  padding: 8px 12px;
+  margin: 0 3px; /* Space between set boxes */
+  min-width: 35px; /* Ensure minimum width */
+  text-align: center;
+  font-weight: bold;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+}
+
+.points-score {
+  flex: 1; /* Match header flex */
+  font-size: 1.8em;
+  font-weight: bold;
+  background-color: #f0f0f0;
+  color: #333;
+  padding: 5px 10px;
+  text-align: center;
+  min-width: 50px; /* Minimum width for points */
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  margin: 0 10px;
+}
+
+.clock-row {
+    justify-content: center; /* Center clock items */
+    padding-top: 15px;
     font-size: 1.2em;
-    min-width: 30px; /* Ensure alignment */
-    text-align: center;
-    margin: 0 10px;
+}
+.clock-label {
+    margin-right: 15px;
+    font-weight: bold;
+     color: #FFD700;
+}
+.clock-time {
+    background-color: #f0f0f0;
+    color: #333;
+    padding: 8px 15px;
+    font-weight: bold;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    font-family: 'Courier New', Courier, monospace; /* Monospace font for clock */
 }
 
-.points {
-    font-weight: normal;
-    min-width: 40px; /* Ensure alignment */
-    text-align: right;
+/* Optional: Connection Status Styling */
+.connection-status {
+  text-align: center;
+  font-size: 0.8em;
+  padding-bottom: 5px;
+  color: #aaa;
 }

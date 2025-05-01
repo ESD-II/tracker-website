@@ -52,7 +52,7 @@ function ReplayControls({ onStartReplay, onStopReplay, isPlayingReplay, currentR
 
     return (
         <div className="replay-controls">
-            <h3>Recorded Points</h3>
+            <h3>Recorded Hits</h3>
             {isLoading && <p>Loading...</p>}
             {error && <p className="error-message">Error: {error}</p>}
             {!isLoading && !error && availablePoints.length === 0 && <p>No points recorded yet.</p>}
@@ -62,7 +62,7 @@ function ReplayControls({ onStartReplay, onStopReplay, isPlayingReplay, currentR
                     {availablePoints.map(point => (
                         <li key={point.id} className={currentReplayPointId === point.id ? 'active' : ''}>
                             <span>
-                                Point ID: {point.id} (
+                                Hit ID: {point.id} (
                                 {new Date(point.recorded_start_time).toLocaleString()}
                                 {point.duration_seconds && ` - ${point.duration_seconds.toFixed(1)}s`}
                                 )
